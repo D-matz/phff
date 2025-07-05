@@ -1,0 +1,6 @@
+fhir.resources
+pydantic
+fastapi
+fhirpy
+uvicorn
+python-multipart
