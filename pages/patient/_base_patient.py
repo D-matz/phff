@@ -60,7 +60,7 @@ def base_patient_nav(all_resources: AllResources, content: str) -> str:
     return(base_nav(
         f"""
         <div style="height: 100%; display: flex;">
-            <nav style="height: 100%; padding: 2px; width: 200px; min-width: 200px; box-sizing: border-box; overflow: auto; background-color: green">
+            <nav id="patient-sidebar" class="color-color2" style="height: 100%; padding: 4px; width: 200px; min-width: 200px; box-sizing: border-box; overflow: auto; border-right: 2px solid;">
                 { f"""<img src="{photo_src}" alt="Patient Photo" style="width: 150px; height: 150px; margin: auto; display: block; object-fit: cover;">"""
                  if photo_src else
                 f"""<svg width="150px" height="150px" style="margin: auto; display: block;">
@@ -113,15 +113,17 @@ def base_patient_nav(all_resources: AllResources, content: str) -> str:
                 <p>procedures</p>
                 <p>notes</p>
             </nav>
-            <div>
-                <nav>
+            <div style="flex: 1; display: flex; flex-direction: column; height: 100%;">
+                <nav id="patient-nav" class="color-color2" style="padding: 4px;">
                     <a href="/patient/{patient.id}/overview">Overview</a>
                     <a href="/patient/{patient.id}/allergy">Allergy</a>
                     <a href="/patient/{patient.id}/medication">Medication</a>
                     <a href="/patient/{patient.id}/immunization">Immunization</a>
                 </nav>
-                <div>
-                    {content}
+                <div style="padding: 8px; flex: 1; min-height: 0;">
+                    <div id="patient-content" class="color-color2" style="height: 100%; overflow: auto;">
+                        {content}
+                    </div>
                 </div>
             </div>
         </div>

@@ -14,8 +14,8 @@ app = FastAPI(default_response_class=HTMLResponse)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 client = AsyncFHIRClient(
-#    'https://hapi.fhir.org/baseR4/',
-    'http://r4.smarthealthit.org/',
+    'https://hapi.fhir.org/baseR4/',
+#    'https://r4.smarthealthit.org/',
 #    'https://server.fire.ly',
     authorization='Bearer TOKEN',
 )

@@ -3,7 +3,7 @@
 
 from app import app
 from pages._base_nav import base_nav
-from pages import registerPatient, calendar, settings, searchPatient
+from pages import registerPatient, calendar, settings
 from pages.patient import overview, allergy
 
 @app.get("/")
