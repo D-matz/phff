@@ -1,4 +1,5 @@
-from app import app, client
+from app import app
+from pages.settings import client
 from pages.patient._base_patient import base_patient_nav, get_all_resources
 from fhir.resources.R4B.patient import Patient
 

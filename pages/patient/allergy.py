@@ -1,4 +1,5 @@
-from app import app, client
+from app import app
+from pages.settings import client
 from pages.patient._base_patient import base_patient_nav, get_all_resources
 from typing import List
 from fastapi import Request
@@ -64,12 +65,15 @@ async def patient_allergy_delete(patient_id: str, allergy_id: str):
 
 def allergy_page(patient_id: str, allergies: List[AllergyIntolerance], form_content: str):
     return f"""
-        <div id="allergy-page" class="color-color2" style="margin: 4px; padding: 4px;">
-            <button hx-target="body"
-                    hx-swap="outerHTML"
-                    hx-get="/patient/{patient_id}/allergy/form/new"
-                    hx-push-url="false"
-                    hx>Add New Allergy</button>
+        <div id="allergy-page" class="color-color3" style="margin: 4px; padding: 4px; border: 2px solid;">
+            <div style="display: flex; align-items: center; gap: 1em;">
+                <h3>Allergies</h3>
+                <button hx-target="body"
+                        hx-swap="outerHTML"
+                        hx-get="/patient/{patient_id}/allergy/form/new"
+                        hx-push-url="false"
+                        hx>Add New Allergy</button>
+            </div>
             <table>
                 <thead>
                     <th>Allergy</th>
@@ -107,7 +111,8 @@ def allergy_form(allergy: AllergyIntolerance, request: Request, patient_id: str)
           hx-post="{submit_url}" 
           hx-target="body" 
           hx-swap="outerHTML"
-          style="background-color: yellow; padding: 1em; border-radius: 8px; position: absolute; top: 100px; right: 100px; cursor: move; min-width: 600px; z-index: 1;">
+          class="color-color3"
+          style="padding: 4px; border-radius: 8px; border: 8px solid; position: absolute; top: 100px; right: 100px; cursor: move; min-width: 600px; z-index: 1;">
         <script>
             dragElt(document.getElementById('allergy-form'))
         </script>

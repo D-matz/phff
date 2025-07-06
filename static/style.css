@@ -1,0 +1,34 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+.htmx-indicator{
+    opacity:0;
+    pointer-events: none;
+    visibility: hidden;
+    height: 0;
+    width: 0;
+    overflow: hidden;
+    transition: opacity 500ms ease-in;
+}
+.htmx-request .htmx-indicator{
+    opacity:1;
+    pointer-events: auto;
+    visibility: visible;
+    height: auto;
+    width: auto;
+    overflow: visible;
+}
+.htmx-request.htmx-indicator{
+    opacity:1;
+    pointer-events: auto;
+    visibility: visible;
+    height: auto;
+    width: auto;
+    overflow: visible;
+}
+
+a {
+    color: inherit;
+    text-decoration: underline;
+}
