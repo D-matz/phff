@@ -6,7 +6,7 @@ from pages._base_nav import base_nav
 from pages.settings import client
 from fhir.resources import __version__, __fhir_version__
 from pages import registerPatient, calendar, settings
-from pages.patient import overview, allergy
+from pages.patient import allergy, demographics, overview
 
 print("===============================================================================")
 print("🥔🥔🥔 Welcome to PotatoEMR 🥔🥔🥔")

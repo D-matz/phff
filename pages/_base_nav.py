@@ -17,9 +17,9 @@ def base_nav(content: str):
             <script src="/static/dragElt.js"></script>
         </head>
         <body style="height: 100%; margin: 0; padding: 0;display: flex; flex-direction: column; overscroll-behavior: none;">
-            <nav id="main-nav" class="color-color1"
+            <nav hx-boost="true" id="main-nav" class="color-color1"
             style="padding: 4px; position: relative; border-bottom: 2px solid;">
-                <a href="/">Home</a>
+                <a href="/">PotatoEMR🥔</a>
                 <input type="text" id="search" name="query" placeholder="patient search"
                     hx-post="/searchPatient"
                     hx-trigger="input changed delay:300ms, keyup[key=='Enter']"

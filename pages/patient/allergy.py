@@ -4,8 +4,6 @@ from pages.patient._base_patient import base_patient_nav, get_all_resources
 from typing import List
 from fastapi import Request
 from resources.AllergyIntolerance import AllergyIntolerance
-from fhir.resources.codeableconcept import CodeableConcept
-from fhir.resources.coding import Coding
 
 @app.get("/patient/{patient_id}/allergy", name="patient_allergy")
 async def patient_allergy(patient_id: str):

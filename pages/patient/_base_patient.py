@@ -2,7 +2,7 @@ from typing import List
 from pydantic import BaseModel
 from pages.settings import client
 import base64
-from fhir.resources.R4B.patient import Patient
+from resources.Patient import Patient
 from resources.AllergyIntolerance import AllergyIntolerance
 from fhir.resources.R4B.condition import Condition
 from fhir.resources.R4B.medicationrequest import MedicationRequest
@@ -114,9 +114,10 @@ def base_patient_nav(all_resources: AllResources, content: str) -> str:
                 <p>notes</p>
             </nav>
             <div style="flex: 1; display: flex; flex-direction: column; height: 100%;">
-                <nav id="patient-nav" class="color-color2" style="padding: 4px; border-bottom: 2px solid;">
+                <nav hx-boost="true" id="patient-nav" class="color-color2" style="padding: 4px; border-bottom: 2px solid;">
                     <a href="/patient/{patient.id}/overview">Overview</a>
-                    <a href="/patient/{patient.id}/allergy">Allergy</a>
+                    <a href="/patient/{patient.id}/demographics">Demographics</a>
+                    <a href="/patient/{patient.id}/allergy">Allergies</a>
                     <a href="/patient/{patient.id}/medication">Medication</a>
                     <a href="/patient/{patient.id}/immunization">Immunization</a>
                 </nav>

@@ -16,7 +16,6 @@ client = AsyncFHIRClient(
 
 class SettingsModel(BaseModel):
     fhir_server: str = Field(..., description="FHIR server URL")
- 
 
 @app.get("/settings", name="settings")
 async def settings_get():
