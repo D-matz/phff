@@ -1,4 +1,5 @@
 //https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.js
+//https://htmx.org/
 var htmx = (function() {
   'use strict'
 

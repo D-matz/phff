@@ -1,7 +1,7 @@
 from app import app
 from pages._base_nav import base_nav
 from pages.settings import client
-from resources.Patient import Patient
+from test.resources import Patient
 from fastapi import Request
 
 

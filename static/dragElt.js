@@ -1,3 +1,4 @@
+//make element moveable eg dragElt(document.getElementById('allergy-form'))
 function dragElt(elt) {
     var startX, startY, startRight, startTop, isDown = false;
     elt.onmousedown = function(e) {

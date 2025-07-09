@@ -13,26 +13,34 @@ def base_nav(content: str):
             <link rel="stylesheet" href="/static/style.css">
             <script src="/static/htmx.js"></script>
             <script src="/static/form-json.js"></script>
-            <script src="/static/setSystemAndValue.js"></script>
+            <script src="/static/setSystemAndCode.js"></script>
             <script src="/static/dragElt.js"></script>
         </head>
         <body style="height: 100%; margin: 0; padding: 0;display: flex; flex-direction: column; overscroll-behavior: none;">
             <nav hx-boost="true" id="main-nav" class="color-color1"
-            style="padding: 4px; position: relative; border-bottom: 2px solid;">
+            style="display: flex; padding: 4px; position: relative; border-bottom: 2px solid; line-height: 1.2em; gap: 0.5em;">
                 <a href="/">PotatoEMR🥔</a>
-                <input type="text" id="search" name="query" placeholder="patient search"
+
+
+    <details style="position:relative;">
+      <summary style="cursor:pointer; list-style:none; text-decoration: underline;">Search Patient</summary>
+      <div class="color-color1" style="position:absolute; z-index: 1; border:8px solid; padding: 4px;">
+
+<input type="text" id="search" name="query" placeholder="patient search"
                     hx-post="/searchPatient"
                     hx-trigger="input changed delay:300ms, keyup[key=='Enter']"
                     hx-target="#search-results"
-                    hx-indicator="#loading"
+                    hx-indicator="#search-patient-container"
                     hx-sync="this:replace">
+                <div id="search-patient-container" class="htmx-indicator" style="width: 700px; height: 260px">
+                    <div id="search-results"></div>
+                </div>
+
+      </div>
+    </details>
                 <a href="/registerPatient">Register Patient</a>
                 <a href="/calendar">Calendar</a>
                 <a href="/settings">Settings</a>
-                <div id="search-patient-container" class="color-color1" style="width: 700px; position: absolute; top: 100%; left: 10px; right: 0; z-index: 1;">
-                    <div id="loading" class="htmx-indicator">Loading...</div>
-                    <div id="search-results"></div>
-                </div>
             </nav>
             <div id="main-content" class="color-color3" style="flex: 1; overflow: auto;">
                 {content}
@@ -44,7 +52,7 @@ def base_nav(content: str):
 
 from app import app
 from pages.settings import client
-from fhir.resources.R4B.patient import Patient
+from test.resources import Patient
 from fastapi import Form
 
 @app.post("/searchPatient", name="searchPatient")
@@ -68,7 +76,7 @@ async def searchPatient(query: str = Form(...)):
             patient_resource = Patient.model_validate(fhirpy_patient.serialize())
             resp += f"""
             <tr
-            onclick="document.getElementById('search').value = ''"; document.getElementById('search-patient-container').innerHTML = '';"
+            style="cursor: pointer;"
             hx-get="/patient/{patient_resource.id}/overview"
             hx-target="body"
             hx-swap="innerHTML"

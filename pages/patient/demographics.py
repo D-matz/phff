@@ -1,24 +1,109 @@
 from app import app
 from pages.settings import client
 from pages.patient._base_patient import base_patient_nav, get_all_resources
-from resources.Patient import Patient
-from fhir.resources.coding import Coding
+from test.resources import Patient, Coding
 
-@app.get("/patient/{patient_id}/demographics", name="patient_demographics_get")
+vs_patient_maritalStatus: list[dict[str, str]] = [
+    { "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus", "code": "A", "display": "Annulled" },
+    { "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus", "code": "D", "display": "Divorced" },
+    { "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus", "code": "I", "display": "Interlocutory" },
+    { "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus", "code": "L", "display": "Legally Separated" },
+    { "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus", "code": "M", "display": "Married" },
+    { "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus", "code": "C", "display": "Common Law" },
+    { "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus", "code": "P", "display": "Polygamous" },
+    { "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus", "code": "T", "display": "Domestic partner" },
+    { "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus", "code": "U", "display": "Unmarried" },
+    { "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus", "code": "S", "display": "Never Married" },
+    { "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus", "code": "W", "display": "Widowed" },
+    { "system": "http://terminology.hl7.org/CodeSystem/v3-NullFlavor", "code": "UNK", "display": "Unknown" }
+]
+
+vs_patient_administrativeGender: list[dict[str, str]] = [
+    {
+        "code": "male",
+        "system": "http://hl7.org/fhir/administrative-gender",
+        "display": "Male"
+    },
+    {
+        "code": "female",
+        "system": "http://hl7.org/fhir/administrative-gender",
+        "display": "Female"
+    },
+    {
+        "code": "other",
+        "system": "http://hl7.org/fhir/administrative-gender",
+        "display": "Other"
+    },
+    {
+        "code": "unknown",
+        "system": "http://hl7.org/fhir/administrative-gender",
+        "display": "Unknown"
+    }
+]
+
+vs_patient_extension_race: list[dict[str, str]] = [
+    {
+    "system": "urn:oid:2.16.840.1.113883.6.238",
+    "code": "1002-5",
+    "display": "American Indian or Alaska Native"
+    },
+    {
+    "system": "urn:oid:2.16.840.1.113883.6.238",
+    "code": "2028-9",
+    "display": "Asian"
+    },
+    {
+    "system": "urn:oid:2.16.840.1.113883.6.238",
+    "code": "2054-5",
+    "display": "Black or African American"
+    },
+    {
+    "system": "urn:oid:2.16.840.1.113883.6.238",
+    "code": "2076-8",
+    "display": "Native Hawaiian or Other Pacific Islander"
+    },
+    {
+    "system": "urn:oid:2.16.840.1.113883.6.238",
+    "code": "2106-3",
+    "display": "White"
+    }
+]
+
+vs_patient_extension_ethnicity: list[dict[str, str]] = [
+    {
+        "system": "urn:oid:2.16.840.1.113883.6.238",
+        "code": "2135-2",
+        "display": "Hispanic or Latino"
+    },
+    {
+        "system": "urn:oid:2.16.840.1.113883.6.238",
+        "code": "2186-5",
+        "display": "Not Hispanic or Latino"
+    }
+]
+
+
+@app.get("/patient/{patient_id}/demographics", name="patient_demographics")
 async def patient_demographics_get(patient_id: str):
     all_resources = await get_all_resources(patient_id)
     patient = all_resources.patient
-    return base_patient_nav(all_resources, demographics_form(patient))
+    return base_patient_nav(all_resources, demographics_form(patient, render_inputs_as_p=True))
 
-@app.post("/patient/{patient_id}/demographics", name="patient_demographics_post")
-async def patient_demographics_post(patient_id: str, patient: Patient):
+@app.get("/patient/{patient_id}/demographics/form", name="patient_demographics_form_get")
+async def patient_demographics_form_get(patient_id: str):
+    all_resources = await get_all_resources(patient_id)
+    patient = all_resources.patient
+    return base_patient_nav(all_resources, demographics_form(patient, render_inputs_as_p=False))
+
+@app.post("/patient/{patient_id}/demographics/form", name="patient_demographics_form_post")
+async def patient_demographics_form_post(patient_id: str, patient: Patient):
     fhirpy_patient = client.resource('Patient', **patient.model_dump(mode='json'))
     await fhirpy_patient.update()
     all_resources = await get_all_resources(patient_id)
     patient = all_resources.patient
-    return base_patient_nav(all_resources, demographics_form(patient))
+    return base_patient_nav(all_resources, demographics_form(patient, render_inputs_as_p=True))
 
-def demographics_form(patient: Patient) -> str:
+def demographics_form(patient: Patient, render_inputs_as_p: bool) -> str:
     phone = None
     for telecom in patient.telecom:
         if telecom.system == "phone":
@@ -30,23 +115,27 @@ def demographics_form(patient: Patient) -> str:
             email = telecom.value
             break
     us_core_race = None
-    for extension in patient.extension:
-        print(extension.url)
-        if extension.url == "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race":
-            us_core_race = Coding(**extension.extension[0].valueCoding)
+    for ext in patient.extension:
+        print(ext.url)
+        if ext.url == "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race":
+            if len(ext.extension) > 0 and ext.extension[0].valueCoding:
+                us_core_race = ext.extension[0].valueCoding
+        #    us_core_race = Coding(**extension.extension[0].valueCoding)
     us_core_ethnicity = None
-    for extension in patient.extension:
-        if extension.url == "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity":
-            us_core_ethnicity = Coding(**extension.extension[0].valueCoding)
+    # for ext in patient.extension:
+    #     if ext.url == "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity":
+    #         if len(ext.extension) > 0 and ext.extension[0].valueCoding:
+    #             us_core_ethnicity = ext.extension[0].valueCoding
 
-    print(us_core_race)
-    print(us_core_ethnicity)
-    return f"""<h1>Demographics</h1>
-    <form
+    return f"""
+    <h1>Demographics</h1>
+    <form id="demographics-form"
         hx-ext="form-json" 
-        hx-post="{app.url_path_for("patient_demographics_post", patient_id=patient.id)}" 
+        hx-post="{app.url_path_for("patient_demographics_form_post", patient_id=patient.id)}" 
         hx-target="body" 
-        hx-swap="outerHTML">
+        hx-swap="outerHTML"
+        hx-indicator="#demographics-form"
+        class="htmx-indicator {'render-input-as-p' if render_inputs_as_p else ''}">
         <table>
             <tr>
                 <td><label for="patient_id">MRN:</label></td>
@@ -69,8 +158,43 @@ def demographics_form(patient: Patient) -> str:
                 <td>
                     <select id="gender" name="gender">
                         <option value="">--</option>
-                        {''.join(f'<option value="{v}"{" selected" if patient and patient.gender == v else ""}>{v}</option>' for v in Patient.model_fields["gender"].json_schema_extra["enum_values"])}
+                        {''.join(f'<option value="{v["code"]}"{" selected" if patient and patient.gender == v["code"] else ""}>{v["display"]}</option>' for v in vs_patient_administrativeGender)}
                     </select>
+                </td>
+            </tr>
+            <tr>
+                <td><label for="us_core_race">Race:</label></td>
+                <td>
+                    <select id="us_core_race" name="us_core_race" 
+                            onchange="setSystemAndCode(this, document.getElementById('us_core_race_System'), document.getElementById('us_core_race_Code'), null)">
+                        <option value="">--</option>
+                        {''.join(
+                            f'<option value="{item["display"]}" data-system="{item["system"]}" data-value="{item["code"]}" {"selected" if us_core_race and us_core_race.display == item["display"] else ""}>{item["display"]}</option>'
+                            for item in (vs_patient_extension_race if patient else [])
+                        )}
+                    </select>
+
+                    <input type="hidden" id="us_core_race_System" name="us_core_race.coding[0].system" 
+                        value="{{ us_core_race.system if us_core_race and us_core_race.system else '' }}">
+                    <input type="hidden" id="us_core_race_Code" name="us_core_race.coding[0].code" 
+                        value="{{ us_core_race.code if us_core_race and us_core_race.code else '' }}">
+                </td>
+            </tr>
+            <tr>
+                <td><label for="us_core_ethnicity">Ethnicity:</label></td>
+                <td>
+                    <select id="us_core_ethnicity" name="us_core_ethnicity" 
+                            onchange="setSystemAndCode(this, document.getElementById('us_core_ethnicity_System'), document.getElementById('us_core_ethnicity_Code'), null)">
+                        <option value="">--</option>
+                        {''.join(
+                            f'<option value="{item["display"]}" data-system="{item["system"]}" data-value="{item["code"]}" {"selected" if us_core_ethnicity and us_core_ethnicity.display == item["display"] else ""}>{item["display"]}</option>'
+                            for item in (vs_patient_extension_ethnicity if patient else [])
+                        )}
+                    </select>
+                    <input type="hidden" id="us_core_ethnicity_System" name="us_core_ethnicity.coding[0].system" 
+                        value="{{ us_core_ethnicity.system if us_core_ethnicity and us_core_ethnicity.system else '' }}">
+                    <input type="hidden" id="us_core_ethnicity_Code" name="us_core_ethnicity.coding[0].code" 
+                        value="{{ us_core_ethnicity.code if us_core_ethnicity and us_core_ethnicity.code else '' }}">
                 </td>
             </tr>
             <tr>
@@ -93,19 +217,19 @@ def demographics_form(patient: Patient) -> str:
                 <input type="hidden" name="telecom[1].system" value="email">
             </tr>
             <tr>
-                <td><label for="maritalStatusDisplay">Marital Status:</label></td>
+                <td><label for="maritalStatus_Display">Marital Status:</label></td>
                 <td>
-                    <input id="maritalStatusDisplay" name="maritalStatus.coding[0].display" list="marital-status-display-list" value="{patient.maritalStatus.coding[0].display if patient.maritalStatus else ''}" 
-                    onblur="setValueAndSystem(this, document.getElementById('codeSystem'), document.getElementById('codeValue'), document.getElementById('codeText'))">
-                    <datalist id="marital-status-display-list">
+                    <select id="maritalStatus_Display" name="maritalStatus_Display" 
+                        onchange="setSystemAndCode(this, document.getElementById('maritalStatus_System'), document.getElementById('maritalStatus_Code'), document.getElementById('maritalStatus_Text'))">
+                    <option value="">--</option>
                         {''.join(
-                            f'<option value="{item["display"]}" data-system="{item["system"]}" data-value="{item["code"]}"></option>'
-                            for item in (patient.valueset_maritalStatus if patient else [])
+                            f'<option value="{item["display"]}" data-system="{item["system"]}" data-value="{item["code"]}" {"selected" if patient.maritalStatus and patient.maritalStatus.coding[0].display == item["display"] else ""}>{item["display"]}</option>'
+                            for item in (vs_patient_maritalStatus if patient else [])
                         )}
-                    </datalist>
-                    <input type="hidden" id="codeSystem" name="maritalStatus.coding[0].system" value="{patient.maritalStatus.coding[0].system if patient.maritalStatus else ''}">
-                    <input type="hidden" id="codeValue" name="maritalStatus.coding[0].code" value="{patient.maritalStatus.coding[0].code if patient.maritalStatus else ''}">
-                    <input type="hidden" id="codeText" name="maritalStatus.text" value="{patient.maritalStatus.text if patient.maritalStatus else ''}">
+                    </select>
+                    <input type="hidden" id="maritalStatus_System" name="maritalStatus.coding[0].system" value="{patient.maritalStatus.coding[0].system if patient.maritalStatus else ''}">
+                    <input type="hidden" id="maritalStatus_Code" name="maritalStatus.coding[0].code" value="{patient.maritalStatus.coding[0].code if patient.maritalStatus else ''}">
+                    <input type="hidden" id="maritalStatus_Text" name="maritalStatus.text" value="{patient.maritalStatus.text if patient.maritalStatus else ''}">
                 </td>
             </tr>
             <tr>
@@ -116,6 +240,17 @@ def demographics_form(patient: Patient) -> str:
                 </td>
             </tr>
         </table>
-        <button type="submit">Update Demographics</button>
+        {
+            f"""<button type="button"
+            hx-get="{app.url_path_for("patient_demographics_form_get", patient_id=patient.id)}">
+                Edit
+            </button>"""
+            if render_inputs_as_p else
+            f"""<button type="submit">Save</button>
+                <button type="button"
+                hx-get="{app.url_path_for("patient_demographics", patient_id=patient.id)}">
+                    Cancel
+                </button>"""
+        }
     </form>
     """

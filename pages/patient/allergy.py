@@ -3,7 +3,81 @@ from pages.settings import client
 from pages.patient._base_patient import base_patient_nav, get_all_resources
 from typing import List
 from fastapi import Request
-from resources.AllergyIntolerance import AllergyIntolerance
+from test.resources import AllergyIntolerance
+
+vs_allergyIntolerance_code: list[dict[str, str]] = [
+        { "system": "http://snomed.info/sct", "code": "91930004", "display": "Allergy to eggs" },
+        { "system": "http://snomed.info/sct", "code": "91932001", "display": "Allergy to peanuts" },
+        { "system": "http://snomed.info/sct", "code": "91936005", "display": "Allergy to latex" },
+        { "system": "http://snomed.info/sct", "code": "300916003", "display": "Allergy to penicillin" },
+        { "system": "http://snomed.info/sct", "code": "300913006", "display": "Allergy to sulfonamide" },
+        { "system": "http://snomed.info/sct", "code": "26743006", "display": "House dust mite allergy" },
+        { "system": "http://snomed.info/sct", "code": "441952005", "display": "Allergy to tree pollen" },
+        { "system": "http://snomed.info/sct", "code": "414285001", "display": "Allergy to grass pollen" },
+        { "system": "http://snomed.info/sct", "code": "419474003", "display": "Allergy to cat dander" },
+        { "system": "http://snomed.info/sct", "code": "294259002", "display": "Allergy to penicillin V" },
+        { "system": "http://snomed.info/sct", "code": "420246004", "display": "Allergy to ragweed" },
+        { "system": "http://snomed.info/sct", "code": "300914000", "display": "Allergy to cephalosporin antibiotic" },
+        { "system": "http://snomed.info/sct", "code": "277132007", "display": "Allergy to latex (finding)" },
+        { "system": "http://snomed.info/sct", "code": "227493005", "display": "Cashew nut allergy" },
+        { "system": "http://snomed.info/sct", "code": "300915001", "display": "Allergy to aminopenicillin antibiotic" },
+        { "system": "http://snomed.info/sct", "code": "300918004", "display": "Allergy to penicillin G" },
+        { "system": "http://snomed.info/sct", "code": "294163004", "display": "Allergy to codeine" },
+        { "system": "http://snomed.info/sct", "code": "235719002", "display": "Allergy to iodine" },
+        { "system": "http://snomed.info/sct", "code": "235719002", "display": "Allergy to iodine" },
+        { "system": "http://snomed.info/sct", "code": "300917000", "display": "Allergy to cephalothin" },
+        { "system": "http://snomed.info/sct", "code": "300919007", "display": "Allergy to penicillamine" },
+        { "system": "http://snomed.info/sct", "code": "300921000", "display": "Allergy to penicillin antibiotic" }
+    ]
+
+vs_criticality: list[dict[str, str]] = [
+    {
+        "code": "low",
+        "system": "http://hl7.org/fhir/allergy-intolerance-criticality",
+        "display": "Low Risk",
+        "definition": "Worst case result of a future exposure is not assessed to be life-threatening or having high potential for organ system failure."
+    },
+    {
+        "code": "high",
+        "system": "http://hl7.org/fhir/allergy-intolerance-criticality",
+        "display": "High Risk",
+        "definition": "Worst case result of a future exposure is assessed to be life-threatening or having high potential for organ system failure."
+    },
+    {
+        "code": "unable-to-assess",
+        "system": "http://hl7.org/fhir/allergy-intolerance-criticality",
+        "display": "Unable to Assess Risk",
+        "definition": "Unable to assess the worst case result of a future exposure."
+    }
+]
+
+vs_category: list[dict[str, str]] = [
+    {
+        "code": "food",
+        "system": "http://hl7.org/fhir/allergy-intolerance-category",
+        "display": "Food",
+        "definition": "Any substance consumed to provide nutritional support for the body."
+    },
+    {
+        "code": "medication",
+        "system": "http://hl7.org/fhir/allergy-intolerance-category",
+        "display": "Medication",
+        "definition": "Substances administered to achieve a physiological effect."
+    },
+    {
+        "code": "environment",
+        "system": "http://hl7.org/fhir/allergy-intolerance-category",
+        "display": "Environment",
+        "definition": "Any substances that are encountered in the environment, including any substance not already classified as food, medication, or biologic."
+    },
+    {
+        "code": "biologic",
+        "system": "http://hl7.org/fhir/allergy-intolerance-category",
+        "display": "Biologic",
+        "definition": "A preparation that is synthesized from living organisms or their products, especially a human or animal protein, such as a hormone or antitoxin, that is used as a diagnostic, preventive, or therapeutic agent. Examples of biologic medications include: vaccines; allergenic extracts, which are used for both diagnosis and treatment (for example, allergy shots); gene therapies; cellular therapies. There are other biologic products, such as tissues, which are not typically associated with allergies."
+    }
+]
+
 
 @app.get("/patient/{patient_id}/allergy", name="patient_allergy")
 async def patient_allergy(patient_id: str):
@@ -130,15 +204,15 @@ def allergy_form(allergy: AllergyIntolerance, request: Request, patient_id: str)
                             </td>
                             <td>
                                 <input id="codeDisplay" name="code.coding[0].display" list="allergy-display-list" value="{allergy.code.coding[0].display if allergy and allergy.code and allergy.code.coding and len(allergy.code.coding) > 0 and allergy.code.coding[0].display else ''}" 
-                                onblur="setValueAndSystem(this, document.getElementById('codeSystem'), document.getElementById('codeValue'), document.getElementById('codeText'))">
+                                onblur="setSystemAndCode(this, document.getElementById('codeSystem'), document.getElementById('codeCode'), document.getElementById('codeText'))">
                                 <datalist id="allergy-display-list">
                                     {''.join(
                                         f'<option value="{item["display"]}" data-system="{item["system"]}" data-value="{item["code"]}"></option>'
-                                        for item in (allergy.valueset_code if allergy else [])
+                                        for item in (vs_allergyIntolerance_code if allergy else [])
                                     )}
                                 </datalist>
                                 <input type="hidden" id="codeSystem" name="code.coding[0].system" value="{allergy.code.coding[0].system if allergy and allergy.code and allergy.code.coding and len(allergy.code.coding) > 0 and allergy.code.coding[0].system else ''}">
-                                <input type="hidden" id="codeValue" name="code.coding[0].code" value="{allergy.code.coding[0].code if allergy and allergy.code and allergy.code.coding and len(allergy.code.coding) > 0 and allergy.code.coding[0].code else ''}">
+                                <input type="hidden" id="codeCode" name="code.coding[0].code" value="{allergy.code.coding[0].code if allergy and allergy.code and allergy.code.coding and len(allergy.code.coding) > 0 and allergy.code.coding[0].code else ''}">
                                 <input type="hidden" id="codeText" name="code.text" value="{allergy.code.text if allergy and allergy.code and allergy.code.text else ''}">
                             </td>
                         </tr>
@@ -161,7 +235,7 @@ def allergy_form(allergy: AllergyIntolerance, request: Request, patient_id: str)
                             <td>
                                 <select id="criticality" name="criticality">
                                     <option value="">--</option>
-                                    {''.join(f'<option value="{v}"{" selected" if allergy and allergy.criticality == v else ""}>{v}</option>' for v in AllergyIntolerance.model_fields["criticality"].json_schema_extra["enum_values"])}
+                                    {''.join(f'<option value="{v["code"]}"{" selected" if allergy and allergy.criticality == v["code"] else ""}>{v["code"]}</option>' for v in vs_criticality)}
                                 </select>
                             </td>
                         </tr>
@@ -172,7 +246,7 @@ def allergy_form(allergy: AllergyIntolerance, request: Request, patient_id: str)
                             <td>
                                 <select id="category" name="category[]">
                                     <option value="">--</option>
-                                    {''.join(f'<option value="{v}"{" selected" if allergy and allergy.category and allergy.category[0] == v else ""}>{v}</option>' for v in AllergyIntolerance.model_fields["category"].json_schema_extra["enum_values"])}
+                                    {''.join(f'<option value="{v["code"]}"{" selected" if allergy and allergy.category and allergy.category[0] == v["code"] else ""}>{v["code"]}</option>' for v in vs_category)}
                                 </select>
                             </td>
                         </tr>

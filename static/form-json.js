@@ -1,4 +1,6 @@
 //https://unpkg.com/htmx-ext-form-json@1.0.6/form-json.js
+// submit forms as nested json based on name so fields like 
+// code.coding[0].display become {"code":{"coding":[{"display":""
 (function() {
   let api
   const _ConfigIgnoreDeepKey_ = 'ignore-deep-key'
