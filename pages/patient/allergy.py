@@ -207,7 +207,7 @@ def allergy_form(allergy: AllergyIntolerance, request: Request, patient_id: str)
                                 onblur="setSystemAndCode(this, document.getElementById('codeSystem'), document.getElementById('codeCode'), document.getElementById('codeText'))">
                                 <datalist id="allergy-display-list">
                                     {''.join(
-                                        f'<option value="{item["display"]}" data-system="{item["system"]}" data-value="{item["code"]}"></option>'
+                                        f'<option value="{item["display"]}" data-system="{item["system"]}" data-code="{item["code"]}"></option>'
                                         for item in (vs_allergyIntolerance_code if allergy else [])
                                     )}
                                 </datalist>

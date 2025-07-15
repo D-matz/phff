@@ -1,7 +1,7 @@
 from app import app
 from pages.settings import client
 from pages.patient._base_patient import base_patient_nav, get_all_resources
-from fhir.resources.R4B.patient import Patient
+from test.resources import Patient
 
 @app.get("/patient/{patient_id}/overview", name="patient_overview")
 async def patient_overview(patient_id: str):

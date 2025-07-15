@@ -20,35 +20,68 @@
     },
 
     encodeParameters: function(xhr, parameters, elt) {
-      let object = {}
       xhr.overrideMimeType('text/json')
+
+      let form_obj = {}
 
       for (const [key, value] of parameters.entries()) {
         const input = elt.querySelector(`[name="${key}"]`)
         const transformedValue = input ? convertValue(input, value, input.type) : value
-        if (Object.hasOwn(object, key)) {
-          if (!Array.isArray(object[key])) {
-            object[key] = [object[key]]
+        if (Object.hasOwn(form_obj, key)) {
+          if (!Array.isArray(form_obj[key])) {
+            form_obj[key] = [form_obj[key]]
           }
-          object[key].push(transformedValue)
+          form_obj[key].push(transformedValue)
         } else {
-          object[key] = transformedValue
+          form_obj[key] = transformedValue
         }
       }
 
+
+
       // FormData encodes values as strings, restore hx-vals/hx-vars with their initial types
       const vals = api.getExpressionVars(elt)
-      Object.keys(object).forEach(function(key) {
-        object[key] = Object.hasOwn(vals, key) ? vals[key] : object[key]
+      Object.keys(form_obj).forEach(function(key) {
+        form_obj[key] = Object.hasOwn(vals, key) ? vals[key] : form_obj[key]
       })
 
       if(!api.hasAttribute(elt, _ConfigIgnoreDeepKey_)){
-        const flagMap = getFlagMap(object)
-        object = buildNestedObject(flagMap, object)
+        const flagMap = getFlagMap(form_obj)
+        form_obj = buildNestedObject(flagMap, form_obj)
       }
-      return (JSON.stringify(object))
+
+      let default_obj= {}
+      if (elt.hasAttribute('data-formjsondefault')) {
+        default_obj = JSON.parse(elt.getAttribute('data-formjsondefault'))
+      }
+      merged = deepMerge(default_obj, form_obj)
+
+      return (JSON.stringify(merged))
     }
   })
+
+  function deepMerge(defaults, form) {
+    // you have two nested jsons with many fields, form and default
+    // how to merge them? if a field exists in both it should come from form
+    // what about case where field has is an array of values? should take the form array
+    const merged = { ...defaults };
+
+    for (const key in form) {
+      if (Object.hasOwn(form, key)) {
+        const formValue = form[key];
+        const defaultValue = defaults[key];
+
+        if (formValue && typeof formValue === 'object' && !Array.isArray(formValue) &&
+            defaultValue && typeof defaultValue === 'object' && !Array.isArray(defaultValue)) {
+          merged[key] = deepMerge(defaultValue, formValue);
+        } else {
+          merged[key] = formValue;
+        }
+      }
+    }
+
+    return merged;
+  }
 
   function convertValue(input, value, inputType) {
     if (inputType == 'number' || inputType == 'range') {

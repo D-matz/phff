@@ -10,7 +10,7 @@ class FHIRServers(Enum):
     FIRELY = "https://server.fire.ly"
 
 client = AsyncFHIRClient(
-    FHIRServers.SMART_HEALTH_IT.value,
+    FHIRServers.HAPI.value,
     authorization='Bearer TOKEN',
 )
 

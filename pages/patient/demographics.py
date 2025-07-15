@@ -2,6 +2,26 @@ from app import app
 from pages.settings import client
 from pages.patient._base_patient import base_patient_nav, get_all_resources
 from test.resources import Patient, Coding
+import json
+import html
+
+            # <tr>
+            #     <td><label for="us_core_ethnicity">Ethnicity:</label></td>
+            #     <td>
+            #         <select id="us_core_ethnicity" name="us_core_ethnicity.coding[0].display" 
+            #                 onchange="setSystemAndCode(this, document.getElementById('us_core_ethnicity_System'), document.getElementById('us_core_ethnicity_Code'), null)">
+            #             <option value="">--</option>
+            #             {''.join(
+            #                 f'<option value="{item["display"]}" data-system="{item["system"]}" data-code="{item["code"]}" {"selected" if us_core_ethnicity and us_core_ethnicity.display == item["display"] else ""}>{item["display"]}</option>'
+            #                 for item in (vs_patient_extension_ethnicity if patient else [])
+            #             )}
+            #         </select>
+            #         <input type="hidden" id="us_core_ethnicity_System" name="us_core_ethnicity.coding[0].system" 
+            #             value="{ us_core_ethnicity.system if us_core_ethnicity and us_core_ethnicity.system else '' }">
+            #         <input type="hidden" id="us_core_ethnicity_Code" name="us_core_ethnicity.coding[0].code" 
+            #             value="{ us_core_ethnicity.code if us_core_ethnicity and us_core_ethnicity.code else '' }">
+            #     </td>
+            # </tr>
 
 vs_patient_maritalStatus: list[dict[str, str]] = [
     { "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus", "code": "A", "display": "Annulled" },
@@ -97,39 +117,74 @@ async def patient_demographics_form_get(patient_id: str):
 
 @app.post("/patient/{patient_id}/demographics/form", name="patient_demographics_form_post")
 async def patient_demographics_form_post(patient_id: str, patient: Patient):
+    print("POST has data", patient.model_dump(mode='json'))
     fhirpy_patient = client.resource('Patient', **patient.model_dump(mode='json'))
-    await fhirpy_patient.update()
+    print("fhirpy_patient", fhirpy_patient.serialize())
+    ret = await fhirpy_patient.update()
     all_resources = await get_all_resources(patient_id)
     patient = all_resources.patient
     return base_patient_nav(all_resources, demographics_form(patient, render_inputs_as_p=True))
 
 def demographics_form(patient: Patient, render_inputs_as_p: bool) -> str:
     phone = None
-    for telecom in patient.telecom:
-        if telecom.system == "phone":
-            phone = telecom.value
-            break
+    if patient.telecom:
+        for telecom in patient.telecom:
+            if telecom.system == "phone":
+                phone = telecom.value
+                break
     email = None
-    for telecom in patient.telecom:
-        if telecom.system == "email":
-            email = telecom.value
-            break
-    us_core_race = None
-    for ext in patient.extension:
-        print(ext.url)
-        if ext.url == "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race":
-            if len(ext.extension) > 0 and ext.extension[0].valueCoding:
-                us_core_race = ext.extension[0].valueCoding
-        #    us_core_race = Coding(**extension.extension[0].valueCoding)
+    if patient.telecom:
+        for telecom in patient.telecom:
+            if telecom.system == "email":
+                email = telecom.value
+                break
+    us_core_race = 0
+    us_core_race_ombCategory = 0
+    us_core_race_url = "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"
+    us_core_race_ombCategory_url = "ombCategory"
+    print("try to find race extension")
+    if patient.extension:
+        for i in range(len(patient.extension)):
+            ext = patient.extension[i]
+            print(ext.url)
+            if ext.url == us_core_race_url:
+                us_core_race = i
+                if ext.extension:
+                    for j in range(len(ext.extension)):
+                        race_ext = ext.extension[j]
+                        if race_ext.url == us_core_race_ombCategory_url:
+                            us_core_race_ombCategory = j
+                            print(race_ext.valueCoding)
+
+    print("us_core_race:", us_core_race, "us_core_race_ombCategory:", us_core_race_ombCategory)
+
     us_core_ethnicity = None
-    # for ext in patient.extension:
-    #     if ext.url == "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity":
-    #         if len(ext.extension) > 0 and ext.extension[0].valueCoding:
-    #             us_core_ethnicity = ext.extension[0].valueCoding
+    us_core_ethnicity_ombCategory = None
+    us_core_ethnicity_url = None
+    us_core_ethnicity_ombCategory_url = None
+
+    print("try to find ethnicity extension")
+    if patient.extension:
+        for i in range(len(patient.extension)):
+            ext = patient.extension[i]
+            print(ext.url)
+            if ext.url == "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity":
+                us_core_ethnicity_url = ext.url
+                us_core_ethnicity = i
+                if ext.extension:
+                    for j in range(len(ext.extension)):
+                        ethnicity_ext = ext.extension[j]
+                        if ethnicity_ext.url == "ombCategory":
+                            us_core_ethnicity_ombCategory_url = ethnicity_ext.url
+                            us_core_ethnicity_ombCategory = j
+                            print(ethnicity_ext.valueCoding)
+
+
 
     return f"""
     <h1>Demographics</h1>
     <form id="demographics-form"
+        data-formjsondefault='{html.escape(json.dumps(patient.model_dump(mode='json')))}'
         hx-ext="form-json" 
         hx-post="{app.url_path_for("patient_demographics_form_post", patient_id=patient.id)}" 
         hx-target="body" 
@@ -165,38 +220,29 @@ def demographics_form(patient: Patient, render_inputs_as_p: bool) -> str:
             <tr>
                 <td><label for="us_core_race">Race:</label></td>
                 <td>
-                    <select id="us_core_race" name="us_core_race" 
+                    <select id="us_core_race" name="extension[{us_core_race}].extension[{us_core_race_ombCategory}].valueCoding.display" 
                             onchange="setSystemAndCode(this, document.getElementById('us_core_race_System'), document.getElementById('us_core_race_Code'), null)">
                         <option value="">--</option>
                         {''.join(
-                            f'<option value="{item["display"]}" data-system="{item["system"]}" data-value="{item["code"]}" {"selected" if us_core_race and us_core_race.display == item["display"] else ""}>{item["display"]}</option>'
-                            for item in (vs_patient_extension_race if patient else [])
+                            f'<option value="{item["display"]}" data-system="{item["system"]}" data-code="{item["code"]}" {"selected" if getsafe(lambda: patient.extension[us_core_race].extension[us_core_race_ombCategory].valueCoding.display) == item["display"] else ""}>{item["display"]}</option>'
+                            for item in (vs_patient_extension_race)
                         )}
                     </select>
 
-                    <input type="hidden" id="us_core_race_System" name="us_core_race.coding[0].system" 
-                        value="{{ us_core_race.system if us_core_race and us_core_race.system else '' }}">
-                    <input type="hidden" id="us_core_race_Code" name="us_core_race.coding[0].code" 
-                        value="{{ us_core_race.code if us_core_race and us_core_race.code else '' }}">
+                    <input type="hidden" id="us_core_race_System" name="extension[{us_core_race}].extension[{us_core_race_ombCategory}].valueCoding.system" 
+                        value="{ getsafe(lambda: patient.extension[us_core_race].extension[us_core_race_ombCategory].valueCoding.system) }">
+                    <input type="hidden" id="us_core_race_Code" name="extension[{us_core_race}].extension[{us_core_race_ombCategory}].valueCoding.code" 
+                        value="{ getsafe(lambda: patient.extension[us_core_race].extension[us_core_race_ombCategory].valueCoding.code) }">
+
+                   <input type="hidden" id="us_core_race_url" name="extension[{us_core_race}].url" 
+                        value="{ us_core_race_url }">
+                   <input type="hidden" id="us_core_race_ombCategory_url" name="extension[{us_core_race}].extension[{us_core_race_ombCategory}].url" 
+                        value="{ us_core_race_ombCategory_url }">
+
+
                 </td>
             </tr>
-            <tr>
-                <td><label for="us_core_ethnicity">Ethnicity:</label></td>
-                <td>
-                    <select id="us_core_ethnicity" name="us_core_ethnicity" 
-                            onchange="setSystemAndCode(this, document.getElementById('us_core_ethnicity_System'), document.getElementById('us_core_ethnicity_Code'), null)">
-                        <option value="">--</option>
-                        {''.join(
-                            f'<option value="{item["display"]}" data-system="{item["system"]}" data-value="{item["code"]}" {"selected" if us_core_ethnicity and us_core_ethnicity.display == item["display"] else ""}>{item["display"]}</option>'
-                            for item in (vs_patient_extension_ethnicity if patient else [])
-                        )}
-                    </select>
-                    <input type="hidden" id="us_core_ethnicity_System" name="us_core_ethnicity.coding[0].system" 
-                        value="{{ us_core_ethnicity.system if us_core_ethnicity and us_core_ethnicity.system else '' }}">
-                    <input type="hidden" id="us_core_ethnicity_Code" name="us_core_ethnicity.coding[0].code" 
-                        value="{{ us_core_ethnicity.code if us_core_ethnicity and us_core_ethnicity.code else '' }}">
-                </td>
-            </tr>
+
             <tr>
                 <td><label for="address_line">Address:</label></td>
                 <td>
@@ -219,16 +265,16 @@ def demographics_form(patient: Patient, render_inputs_as_p: bool) -> str:
             <tr>
                 <td><label for="maritalStatus_Display">Marital Status:</label></td>
                 <td>
-                    <select id="maritalStatus_Display" name="maritalStatus_Display" 
+                    <select id="maritalStatus_Display" name="maritalStatus.coding[0].display" 
                         onchange="setSystemAndCode(this, document.getElementById('maritalStatus_System'), document.getElementById('maritalStatus_Code'), document.getElementById('maritalStatus_Text'))">
                     <option value="">--</option>
                         {''.join(
-                            f'<option value="{item["display"]}" data-system="{item["system"]}" data-value="{item["code"]}" {"selected" if patient.maritalStatus and patient.maritalStatus.coding[0].display == item["display"] else ""}>{item["display"]}</option>'
+                            f'<option value="{item["display"]}" data-system="{item["system"]}" data-code="{item["code"]}" {"selected" if patient.maritalStatus and patient.maritalStatus.coding and patient.maritalStatus.coding[0].display == item["display"] else ""}>{item["display"]}</option>'
                             for item in (vs_patient_maritalStatus if patient else [])
                         )}
                     </select>
-                    <input type="hidden" id="maritalStatus_System" name="maritalStatus.coding[0].system" value="{patient.maritalStatus.coding[0].system if patient.maritalStatus else ''}">
-                    <input type="hidden" id="maritalStatus_Code" name="maritalStatus.coding[0].code" value="{patient.maritalStatus.coding[0].code if patient.maritalStatus else ''}">
+                    <input type="hidden" id="maritalStatus_System" name="maritalStatus.coding[0].system" value="{patient.maritalStatus.coding[0].system if patient.maritalStatus and patient.maritalStatus.coding else ''}">
+                    <input type="hidden" id="maritalStatus_Code" name="maritalStatus.coding[0].code" value="{patient.maritalStatus.coding[0].code if patient.maritalStatus and patient.maritalStatus.coding else ''}">
                     <input type="hidden" id="maritalStatus_Text" name="maritalStatus.text" value="{patient.maritalStatus.text if patient.maritalStatus else ''}">
                 </td>
             </tr>
@@ -254,3 +300,10 @@ def demographics_form(patient: Patient, render_inputs_as_p: bool) -> str:
         }
     </form>
     """
+
+def getsafe(fn, default="-"):
+    try:
+        print("fn is", fn())
+        return fn() or default
+    except Exception:
+        return default

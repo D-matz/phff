@@ -139,6 +139,5 @@ def get_patient_photo_src(patient) -> str | None:
     if photo.url and photo.url.strip():
         return photo.url
     if photo.data and len(photo.data) > 0 and photo.contentType and photo.contentType.strip():
-        base64_string = base64.b64encode(photo.data).decode('utf-8')
-        return f"data:{photo.contentType};base64,{base64_string}"
+        return f"data:{photo.contentType};base64,{photo.data}"
     return None
