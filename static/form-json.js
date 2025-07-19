@@ -89,9 +89,6 @@
     } else if (inputType === 'checkbox') {
       return input.defaultValue || true
     }
-    /*else if (inputType === 'file') {
-      return handleFileInput(input)
-    }*/
     return value
   }
 

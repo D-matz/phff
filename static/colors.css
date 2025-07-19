@@ -1,6 +1,15 @@
 /*
-set colors (background, border, text, hover) of
-elements with class="color-primary", "color-color2", "color-info", etc
+set colors (background, border, text, hover) of elemets, also hover optional
+class="color-primary color-primary-hover"
+class="color-color1 color-color1-hover"
+class="color-color2 color-color2-hover"
+class="color-color3 color-color3-hover"
+class="color-success color-success-hover"
+class="color-warning color-warning-hover"
+class="color-danger color-danger-hover"
+class="color-info color-info-hover"
+class="color-light color-light-hover"
+class="color-dark color-dark-hover"
 */
 
 :root {

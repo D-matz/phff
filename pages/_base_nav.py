@@ -16,7 +16,7 @@ def base_nav(content: str):
             <script src="/static/setSystemAndCode.js"></script>
             <script src="/static/dragElt.js"></script>
         </head>
-        <body style="height: 100%; margin: 0; padding: 0;display: flex; flex-direction: column; overscroll-behavior: none;">
+        <body style="height: 100%; margin: 0; padding: 0;display: flex; flex-direction: column;">
             <nav hx-boost="true" id="main-nav" class="color-color1"
             style="display: flex; padding: 4px; position: relative; border-bottom: 2px solid; line-height: 1.2em; gap: 0.5em;">
                 <a href="/">PotatoEMR🥔</a>

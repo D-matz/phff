@@ -10,3 +10,4 @@ app = FastAPI(default_response_class=HTMLResponse)
 #https://martinfowler.com/articles/richardsonMaturityModel.html#level3
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
