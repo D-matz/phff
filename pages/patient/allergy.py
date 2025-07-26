@@ -1,6 +1,6 @@
 from app import app
 from pages.settings import client
-from pages.patient._base_patient import base_patient_nav, get_all_resources
+from pages.patient._base_patient import base_patient_nav, get_all_resources, page_name_allergy
 from typing import List
 from fastapi import Request
 from test.resources import AllergyIntolerance
@@ -78,14 +78,13 @@ vs_category: list[dict[str, str]] = [
     }
 ]
 
-
-@app.get("/patient/{patient_id}/allergy", name="patient_allergy")
+@app.get("/patient/{patient_id}/allergy", name=page_name_allergy)
 async def patient_allergy(patient_id: str):
     all_resources = await get_all_resources(patient_id)
     allergies = all_resources.allergies
     form = ""
     ret = allergy_page(patient_id, allergies, form)
-    return base_patient_nav(all_resources, ret)
+    return base_patient_nav(all_resources, ret, page_name_allergy)
 
 @app.get("/patient/{patient_id}/allergy/form/new", name="patient_allergy_form_new_get")
 async def patient_allergy_form_new_get(request: Request, patient_id: str):
@@ -93,7 +92,7 @@ async def patient_allergy_form_new_get(request: Request, patient_id: str):
     allergies = all_resources.allergies
     form = allergy_form(AllergyIntolerance.model_construct(), request, patient_id)
     ret = allergy_page(patient_id, allergies, form)
-    return base_patient_nav(all_resources, ret)
+    return base_patient_nav(all_resources, ret, page_name_allergy)
 
 @app.post("/patient/{patient_id}/allergy/form/new", name="patient_allergy_form_new_post")
 async def patient_allergy_form_new_post(request: Request, patient_id: str, allergy: AllergyIntolerance):
@@ -103,7 +102,7 @@ async def patient_allergy_form_new_post(request: Request, patient_id: str, aller
     allergies = all_resources.allergies
     form = ""
     ret = allergy_page(patient_id, allergies, form)
-    return base_patient_nav(all_resources, ret)
+    return base_patient_nav(all_resources, ret, page_name_allergy)
 
 @app.get("/patient/{patient_id}/allergy/form/existing/{allergy_id}", name="patient_allergy_form_existing_get")
 async def patient_allergy_form_existing_get(patient_id: str, allergy_id: str, request: Request):
@@ -113,7 +112,7 @@ async def patient_allergy_form_existing_get(patient_id: str, allergy_id: str, re
     allergies = all_resources.allergies
     form = allergy_form(allergy, request, patient_id)
     ret = allergy_page(patient_id, allergies, form)
-    return base_patient_nav(all_resources, ret)
+    return base_patient_nav(all_resources, ret, page_name_allergy)
 
 @app.post("/patient/{patient_id}/allergy/form/existing/{allergy_id}", name="patient_allergy_form_existing_post")
 async def patient_allergy_form_existing_post(request: Request, patient_id: str, allergy_id: str, allergy: AllergyIntolerance):
@@ -123,7 +122,7 @@ async def patient_allergy_form_existing_post(request: Request, patient_id: str, 
     allergies = all_resources.allergies
     form = ""
     ret = allergy_page(patient_id, allergies, form)
-    return base_patient_nav(all_resources, ret)
+    return base_patient_nav(all_resources, ret, page_name_allergy)
 
 @app.post("/patient/{patient_id}/allergy/{allergy_id}/delete", name="patient_allergy_delete")
 async def patient_allergy_delete(patient_id: str, allergy_id: str):
@@ -133,11 +132,12 @@ async def patient_allergy_delete(patient_id: str, allergy_id: str):
     allergies = all_resources.allergies
     form = ""
     ret = allergy_page(patient_id, allergies, form)
-    return base_patient_nav(all_resources, ret)
+    return base_patient_nav(all_resources, ret, page_name_allergy)
 
 def allergy_page(patient_id: str, allergies: List[AllergyIntolerance], form_content: str):
     return f"""
-        <div id="allergy-page" class="color-color3" style="margin: 4px; padding: 4px; border: 2px solid;">
+        <h1>Allergies</h1>
+        <div id="allergy-page" class="color-color3" style="margin: 4px; padding: 4px; border: 2px solid; width: fit-content;">
             <div style="display: flex; align-items: center; gap: 1em;">
                 <h3>Allergies</h3>
                 <button hx-target="body"

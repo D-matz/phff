@@ -1,27 +1,9 @@
 from app import app
 from pages.settings import client
-from pages.patient._base_patient import base_patient_nav, get_all_resources
+from pages.patient._base_patient import base_patient_nav, get_all_resources, page_name_demographics
 from test.resources import Patient, Coding
 import json
 import html
-
-            # <tr>
-            #     <td><label for="us_core_ethnicity">Ethnicity:</label></td>
-            #     <td>
-            #         <select id="us_core_ethnicity" name="us_core_ethnicity.coding[0].display" 
-            #                 onchange="setSystemAndCode(this, document.getElementById('us_core_ethnicity_System'), document.getElementById('us_core_ethnicity_Code'), null)">
-            #             <option value="">--</option>
-            #             {''.join(
-            #                 f'<option value="{item["display"]}" data-system="{item["system"]}" data-code="{item["code"]}" {"selected" if us_core_ethnicity and us_core_ethnicity.display == item["display"] else ""}>{item["display"]}</option>'
-            #                 for item in (vs_patient_extension_ethnicity if patient else [])
-            #             )}
-            #         </select>
-            #         <input type="hidden" id="us_core_ethnicity_System" name="us_core_ethnicity.coding[0].system" 
-            #             value="{ us_core_ethnicity.system if us_core_ethnicity and us_core_ethnicity.system else '' }">
-            #         <input type="hidden" id="us_core_ethnicity_Code" name="us_core_ethnicity.coding[0].code" 
-            #             value="{ us_core_ethnicity.code if us_core_ethnicity and us_core_ethnicity.code else '' }">
-            #     </td>
-            # </tr>
 
 vs_patient_maritalStatus: list[dict[str, str]] = [
     { "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus", "code": "A", "display": "Annulled" },
@@ -103,17 +85,17 @@ vs_patient_extension_ethnicity: list[dict[str, str]] = [
 ]
 
 
-@app.get("/patient/{patient_id}/demographics", name="patient_demographics")
+@app.get("/patient/{patient_id}/demographics", name=page_name_demographics)
 async def patient_demographics_get(patient_id: str):
     all_resources = await get_all_resources(patient_id)
     patient = all_resources.patient
-    return base_patient_nav(all_resources, demographics_form(patient, render_inputs_as_p=True))
+    return base_patient_nav(all_resources, demographics_form(patient, render_inputs_as_p=True), page_name_demographics)
 
 @app.get("/patient/{patient_id}/demographics/form", name="patient_demographics_form_get")
 async def patient_demographics_form_get(patient_id: str):
     all_resources = await get_all_resources(patient_id)
     patient = all_resources.patient
-    return base_patient_nav(all_resources, demographics_form(patient, render_inputs_as_p=False))
+    return base_patient_nav(all_resources, demographics_form(patient, render_inputs_as_p=False), page_name_demographics)
 
 @app.post("/patient/{patient_id}/demographics/form", name="patient_demographics_form_post")
 async def patient_demographics_form_post(patient_id: str, patient: Patient):
@@ -121,9 +103,10 @@ async def patient_demographics_form_post(patient_id: str, patient: Patient):
     fhirpy_patient = client.resource('Patient', **patient.model_dump(mode='json'))
     print("fhirpy_patient", fhirpy_patient.serialize())
     ret = await fhirpy_patient.update()
+    print("ret is", ret.serialize())
     all_resources = await get_all_resources(patient_id)
     patient = all_resources.patient
-    return base_patient_nav(all_resources, demographics_form(patient, render_inputs_as_p=True))
+    return base_patient_nav(all_resources, demographics_form(patient, render_inputs_as_p=True), page_name_demographics)
 
 def demographics_form(patient: Patient, render_inputs_as_p: bool) -> str:
     phone = None
@@ -158,28 +141,27 @@ def demographics_form(patient: Patient, render_inputs_as_p: bool) -> str:
 
     print("us_core_race:", us_core_race, "us_core_race_ombCategory:", us_core_race_ombCategory)
 
-    us_core_ethnicity = None
-    us_core_ethnicity_ombCategory = None
-    us_core_ethnicity_url = None
-    us_core_ethnicity_ombCategory_url = None
-
+    us_core_ethnicity = 0
+    if us_core_race == 0:
+        us_core_ethnicity = 1
+    us_core_ethnicity_ombCategory = 0
+    us_core_ethnicity_url = "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity"
+    us_core_ethnicity_ombCategory_url = "ombCategory"
     print("try to find ethnicity extension")
     if patient.extension:
         for i in range(len(patient.extension)):
             ext = patient.extension[i]
             print(ext.url)
-            if ext.url == "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity":
-                us_core_ethnicity_url = ext.url
+            if ext.url == us_core_ethnicity_url:
                 us_core_ethnicity = i
                 if ext.extension:
                     for j in range(len(ext.extension)):
                         ethnicity_ext = ext.extension[j]
-                        if ethnicity_ext.url == "ombCategory":
-                            us_core_ethnicity_ombCategory_url = ethnicity_ext.url
+                        if ethnicity_ext.url == us_core_ethnicity_ombCategory_url:
                             us_core_ethnicity_ombCategory = j
                             print(ethnicity_ext.valueCoding)
 
-
+    print("us_core_ethnicity:", us_core_ethnicity, "us_core_ethnicity_ombCategory:", us_core_ethnicity_ombCategory)
 
     return f"""
     <h1>Demographics</h1>
@@ -233,13 +215,32 @@ def demographics_form(patient: Patient, render_inputs_as_p: bool) -> str:
                         value="{ getsafe(lambda: patient.extension[us_core_race].extension[us_core_race_ombCategory].valueCoding.system) }">
                     <input type="hidden" id="us_core_race_Code" name="extension[{us_core_race}].extension[{us_core_race_ombCategory}].valueCoding.code" 
                         value="{ getsafe(lambda: patient.extension[us_core_race].extension[us_core_race_ombCategory].valueCoding.code) }">
-
                    <input type="hidden" id="us_core_race_url" name="extension[{us_core_race}].url" 
                         value="{ us_core_race_url }">
                    <input type="hidden" id="us_core_race_ombCategory_url" name="extension[{us_core_race}].extension[{us_core_race_ombCategory}].url" 
                         value="{ us_core_race_ombCategory_url }">
+                </td>
+            </tr>
+            <tr>
+                <td><label for="us_core_ethnicity">Ethnicity:</label></td>
+                <td>
+                    <select id="us_core_ethnicity" name="extension[{us_core_ethnicity}].extension[{us_core_ethnicity_ombCategory}].valueCoding.display" 
+                            onchange="setSystemAndCode(this, document.getElementById('us_core_ethnicity_System'), document.getElementById('us_core_ethnicity_Code'), null)">
+                        <option value="">--</option>
+                        {''.join(
+                            f'<option value="{item["display"]}" data-system="{item["system"]}" data-code="{item["code"]}" {"selected" if getsafe(lambda: patient.extension[us_core_ethnicity].extension[us_core_ethnicity_ombCategory].valueCoding.display) == item["display"] else ""}>{item["display"]}</option>'
+                            for item in (vs_patient_extension_ethnicity)
+                        )}
+                    </select>
 
-
+                    <input type="hidden" id="us_core_ethnicity_System" name="extension[{us_core_ethnicity}].extension[{us_core_ethnicity_ombCategory}].valueCoding.system" 
+                        value="{ getsafe(lambda: patient.extension[us_core_ethnicity].extension[us_core_ethnicity_ombCategory].valueCoding.system) }">
+                    <input type="hidden" id="us_core_ethnicity_Code" name="extension[{us_core_ethnicity}].extension[{us_core_ethnicity_ombCategory}].valueCoding.code" 
+                        value="{ getsafe(lambda: patient.extension[us_core_ethnicity].extension[us_core_ethnicity_ombCategory].valueCoding.code) }">
+                   <input type="hidden" id="us_core_ethnicity_url" name="extension[{us_core_ethnicity}].url" 
+                        value="{ us_core_ethnicity_url }">
+                   <input type="hidden" id="us_core_ethnicity_ombCategory_url" name="extension[{us_core_ethnicity}].extension[{us_core_ethnicity_ombCategory}].url" 
+                        value="{ us_core_ethnicity_ombCategory_url }">
                 </td>
             </tr>
 
@@ -294,7 +295,7 @@ def demographics_form(patient: Patient, render_inputs_as_p: bool) -> str:
             if render_inputs_as_p else
             f"""<button type="submit">Save</button>
                 <button type="button"
-                hx-get="{app.url_path_for("patient_demographics", patient_id=patient.id)}">
+                hx-get="{app.url_path_for(page_name_demographics, patient_id=patient.id)}">
                     Cancel
                 </button>"""
         }

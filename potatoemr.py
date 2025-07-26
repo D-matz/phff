@@ -5,7 +5,7 @@ from app import app
 from pages._base_nav import base_nav
 from pages.settings import client
 from pages import registerPatient, calendar, settings
-from pages.patient import allergy, demographics, overview, photo
+from pages.patient import allergy, demographics, immunizations, overview, photo
 
 print("===============================================================================")
 print("🥔🥔🥔 Welcome to PotatoEMR 🥔🥔🥔")

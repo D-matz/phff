@@ -3,14 +3,27 @@ from typing import List
 from pydantic import BaseModel
 from pages.settings import client
 import base64
-from test.resources import AllergyIntolerance, Attachment, Condition, Patient, MedicationRequest
+from test.resources import (
+    AllergyIntolerance, Attachment, Condition, Immunization, Patient, MedicationRequest)
 from pages._base_nav import base_nav
+
+#the individual patient pages import their base link names from here
+#because when patient page calls this base patient template,
+#it uses name to say it's the active tab and should be highlighted
+#they need to be defined here and not in the patient page to avoid circular import
+page_name_allergy = "patient_allergy"
+page_name_demographics = "demographics"
+page_name_immunizations = "immunization"
+page_name_overview = "overview"
+page_name_photo = "photo"
+page_name_medications = "medication"
 
 class AllResources(BaseModel):
     patient: Patient
     allergies: List[AllergyIntolerance]
     conditions: List[Condition]
     medications: List[MedicationRequest]
+    immunizations: List[Immunization]
 
 async def get_all_resources(patient_id) -> AllResources:
     """Fetches a Patient resource and their related resources (AllergyIntolerance, etc).
@@ -20,6 +33,7 @@ async def get_all_resources(patient_id) -> AllResources:
     .search(_id=patient_id) \
     .revinclude('AllergyIntolerance', 'patient') \
     .revinclude('Condition', 'patient') \
+    .revinclude('Immunization', 'patient') \
     .revinclude('MedicationRequest', 'subject') \
     .fetch_raw()
 
@@ -33,7 +47,7 @@ async def get_all_resources(patient_id) -> AllResources:
 
     #this dummy patient.model_construct() is just because AllResources patient cant be None
     #but really a patient page should always have a patient resource, there should always be a patient from the bundle
-    ret = AllResources(patient=Patient.model_construct(), allergies=[], conditions=[], medications=[])
+    ret = AllResources(patient=Patient.model_construct(), allergies=[], conditions=[], immunizations=[], medications=[])
     for entry in resources.entry:
         resource = entry.resource
         resource_type = resource.resource_type
@@ -44,6 +58,8 @@ async def get_all_resources(patient_id) -> AllResources:
                 ret.allergies.append(AllergyIntolerance.model_validate(resource.serialize()))
             elif resource_type == 'Condition':
                 ret.conditions.append(Condition.model_validate(resource.serialize()))
+            elif resource_type == 'Immunization':
+                ret.immunizations.append(Immunization.model_validate(resource.serialize()))
             elif resource_type == 'MedicationRequest':
                 ret.medications.append(MedicationRequest.model_validate(resource.serialize()))
         except Exception as e:
@@ -51,22 +67,31 @@ async def get_all_resources(patient_id) -> AllResources:
     return ret
 
 
-def base_patient_nav(all_resources: AllResources, content: str) -> str:
+def base_patient_nav(all_resources: AllResources, content: str, activeTab: str) -> str:
     """every page for a specific patient shows sidebar on left and links on top
     patient page content goes in under them in patient-content
-    both navs have hx-boost for links and loading indicator on patient-content"""
+    both navs have hx-boost for links and loading indicator on patient-content
+    page should say it's the active tab, so template can highlight page link in nav"""
     patient: Patient = all_resources.patient
     allergies: list[AllergyIntolerance] = all_resources.allergies
     conditions: list[Condition] = all_resources.conditions
     medications: list[MedicationRequest] = all_resources.medications
+    immunizations: list[Immunization] = all_resources.immunizations
+    def tab_link(tab_name, label):
+        """if this tab name is active tab, make same color as patient page"""
+        if tab_name == activeTab:
+            style = 'class="color-color3" style="margin-top: 2px; margin-bottom: -2px; border-radius: 12px 12px 0 0; border: 2px solid; border-bottom: 0px; padding: 2px 4px 4px 4px;"'
+        else:
+            style = 'class="color-color2-hover" style="padding: 4px; padding-top: 6px;"'
+        return f'<a {style} href="{app.url_path_for(tab_name, patient_id=patient.id)}">{label}</a>'
+    
     return(base_nav(
         f"""
-        <div 
-          style="height: 100%; display: flex;">
+        <div style="height: 100%; display: flex;">
             <nav hx-boost="true" hx-indicator="#patient-content" 
                 id="patient-sidebar" class="color-color2" style="height: 100%; padding: 4px; width: 200px; min-width: 200px; box-sizing: border-box; overflow: auto; border-right: 2px solid;">
 
-                <a href="{app.url_path_for("patient_photo_get", patient_id=patient.id)}"
+                <a href="{app.url_path_for(page_name_photo, patient_id=patient.id)}"
                     title="patient photo - click to change">
                     { f"""<img src="{get_patient_photo_src(patient)}" alt="Patient Photo" style="width: 150px; height: 150px; margin: auto; display: block; object-fit: cover; border-radius: 5px;">"""
                     if patient.photo else
@@ -100,9 +125,9 @@ def base_patient_nav(all_resources: AllResources, content: str) -> str:
                    {"".join(
                         f"""<p>{
                             " ".join(coding.display if coding.display else (coding.code if coding.code else '')
-                                     for coding in medication.medicationCodeableConcept.coding)
-                            if medication.medicationCodeableConcept else "unknown medication"
-                        }</p>""" for medication in medications
+                                     for coding in med.medicationCodeableConcept.coding)
+                            if med.medicationCodeableConcept and med.medicationCodeableConcept.coding else "unknown medication"
+                        }</p>""" for med in medications
                     )}
                 </div>
                 <div>
@@ -110,12 +135,23 @@ def base_patient_nav(all_resources: AllResources, content: str) -> str:
                     {"".join(
                         f"""<p>{
                             " ".join(coding.display if coding.display else (coding.code if coding.code else '')
-                                     for coding in condition.code.coding)
-                            if condition.code else "Unknown"
-                        }</p>""" for condition in conditions
+                                     for coding in cond.code.coding)
+                            if cond.code and cond.code.coding else "Unknown"
+                        }</p>""" for cond in conditions
                     )}
                 </div>
-                <p>immunizations</p>
+                <!--"nobody got time to read immunization history"
+                <div>
+                    <p>Immunization history:</p>
+                    {"".join(
+                        f"""<p>{
+                            " ".join(coding.display if coding.display else (coding.code if coding.code else '')
+                                     for coding in imm.vaccineCode.coding)
+                            if imm.vaccineCode and imm.vaccineCode.coding else "unknown medication"
+                        }</p>""" for imm in immunizations
+                    )}
+                </div>
+                -->
                 <p>lab results</p>
                 <p>vitals</p>
                 <p>diagnoses</p>
@@ -124,13 +160,13 @@ def base_patient_nav(all_resources: AllResources, content: str) -> str:
             </nav>
             <div style="flex: 1; display: flex; flex-direction: column; height: 100%;">
                 <nav hx-boost="true" hx-indicator="#patient-content" 
-                    id="patient-nav" class="color-color2"
-                            style="display: flex; padding: 4px; position: relative; border-bottom: 2px solid; line-height: 1.2em; gap: 0.5em;">
-                    <a href="/patient/{patient.id}/overview">Overview</a>
-                    <a href="/patient/{patient.id}/demographics">Demographics</a>
-                    <a href="/patient/{patient.id}/allergy">Allergies</a>
-                    <a href="/patient/{patient.id}/medication">Medication</a>
-                    <a href="/patient/{patient.id}/immunization">Immunization</a>
+                    id="patient-nav" class="color-color2" 
+                    style="padding-left: 2px; display: flex; position: relative; border-bottom: 2px solid; line-height: 1.2em;">
+                    {tab_link(page_name_overview, "Overview")}
+                    {tab_link(page_name_demographics, "Demographics")}
+                    {tab_link(page_name_allergy, "Allergies")}
+                    {tab_link(page_name_allergy, "Medication")}
+                    {tab_link(page_name_immunizations, "Immunization History")}
                 </nav>
                 <div style="padding: 8px; flex: 1; min-height: 0;">
                     <div id="patient-content"
@@ -142,7 +178,6 @@ def base_patient_nav(all_resources: AllResources, content: str) -> str:
             </div>
         </div>
         """))
-
 
 def get_patient_photo_src(patient: Patient) -> str | None:
     """

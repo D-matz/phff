@@ -21,9 +21,8 @@ function initDropZone(fileInput, container) {
 
     const overlay = document.createElement('div');
     overlay.innerHTML = '<div style="padding: 20px; border-radius: 8px; text-align: center; font-size: 25px; border: 2px dashed;">Drop file here</div>';
-    overlay.classList.add('color-primary');
     overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; opacity: 50%; display: none; align-items: center; justify-content: center; z-index: 1000; pointer-events: none;';
-    overlay.classList.add('color-primary');
+    overlay.classList.add('color-dark');
     document.body.appendChild(overlay);
     let dragCount = 0;
 
