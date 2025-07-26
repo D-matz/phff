@@ -3,9 +3,10 @@ from pages.settings import client
 from pages.patient._base_patient import base_patient_nav, get_all_resources, page_name_immunizations
 from typing import List
 from fastapi import Request
-from test.resources import Immunization
+from resources import Immunization
 from datetime import datetime
 from typing import List, Dict, Tuple
+from utils import cc_str
 
 @app.get("/patient/{patient_id}/immunization", name=page_name_immunizations)
 async def patient_immunization(patient_id: str):
@@ -83,12 +84,18 @@ def immunization_page(patient_id: str, immunization_list: List[Immunization], fo
                         immunizations_byVaccine[imm_key] = [imm]
     lines = []
     lines.append(f"""
+    {form_content}
     <style>
+        .spacer {{
+            height: 10px;
+        }}
+             
         .vaccine-group td{{
             padding: 4px;
+            border-bottom: 1px solid;
         }}
             .vaccine-group td:first-child {{
-            border-left: 5px solid;
+            border-left: 3px solid;
         }}
                 
         .spacer + .vaccine-group td:first-child,
@@ -100,16 +107,17 @@ def immunization_page(patient_id: str, immunization_list: List[Immunization], fo
         tbody .vaccine-group:last-child td:first-child {{
             border-bottom-left-radius: 8px;
         }}
-        
-        .spacer {{
-            height: 10px;
+            
+        .vaccine-group:first-child td,
+        .spacer + .vaccine-group td {{
+            border-top: 1px solid;
         }}
     </style>
     <h1>Immunization History</h1>
     <div id="immunization-page" class="color-color3" style="margin: 4px; padding: 4px; border: 2px solid; width: fit-content;">
     <table style="border-collapse: separate; border-spacing: 0;">
         <thead>
-                <th style="text-align: left">Immunization</th>
+                <th style="text-align: left; padding-left: 8px;">Immunization</th>
                 <th style="text-align: left">Date</th>
                 <th style="text-align: left">Note</th>
                 <th style="text-align: left"></th>
@@ -135,7 +143,14 @@ def immunization_page(patient_id: str, immunization_list: List[Immunization], fo
                         <td style="width: 150px;">{vaccineCode}</td>
                         <td style="width: 150px;">{imm.occurrenceDateTime[:10] if imm.occurrenceDateTime else ''}</td>
                         <td style="width: 400px; overflow: hidden">{imm.note[0].text if imm.note and len(imm.note) else ''}</td>
-                        <td><button>edit</button></td>
+                        <td>
+                            <button hx-target="body"
+                                    hx-swap="outerHTML"
+                                    hx-get="{app.url_path_for("patient_immunization_form_existing_get", patient_id=patient_id, immunization_id=imm.id)}"
+                                    hx-push-url="false">
+                                        Edit
+                                    </button>
+                        </td>
                     </tr>""")
         lines.append('<tr class="spacer"></tr>')
     lines.append(f"""
@@ -144,7 +159,23 @@ def immunization_page(patient_id: str, immunization_list: List[Immunization], fo
     return(''.join(lines))
 
 
-def immunization_form(immunization: Immunization, patient_id: str):
+def immunization_form(imm: Immunization, patient_id: str):
     return f"""
-       
+       <form id="immunization-form" 
+          hx-ext="form-json" 
+          hx-post="{app.url_path_for("patient_immunization_form_existing_post", patient_id=patient_id, immunization_id=imm.id)}" 
+          hx-target="body" 
+          hx-swap="outerHTML"
+          class="color-color3"
+          style="padding: 4px; border: 2px solid; border-radius: 8px; position: absolute; top: 107px; right: 118px; cursor: move; min-width: 600px; z-index: 1; box-shadow: var(--color3-border) 5px 5px;">
+        <script>
+            dragElt(document.getElementById('immunization-form'))
+        </script>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1em;">
+                <b>{1}</b>
+                <button type="button" onclick="document.getElementById('immunization-form')?.remove();">
+                    X
+                </button>
+            </div>
+        </form>
     """

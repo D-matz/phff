@@ -1,7 +1,6 @@
 def base_nav(content: str):
     """every page shows this nav bar on top
-    it links to /, registerPatient, calendar, settings,
-    and implements searchPatient"""
+    it links to some pages and implements searchPatient"""
     return f"""
     <!DOCTYPE html>
     <html lang="en" style="height: 100%; margin: 0; padding: 0;">
@@ -20,11 +19,11 @@ def base_nav(content: str):
         </head>
         <body style="height: 100%; margin: 0; padding: 0;display: flex; flex-direction: column;">
             <nav hx-boost="true" id="main-nav" class="color-color1"
-            style="display: flex; padding: 4px; position: relative; border-bottom: 2px solid; line-height: 1.2em; gap: 0.5em;">
-                <a href="/">PotatoEMR🥔</a>
+            style="display: flex; padding-left: 2px; position: relative; border-bottom: 2px solid; line-height: 1.2em;">
+                <a class="color-color1-hover" style="padding: 4px" href="/">PotatoEMR🥔</a>
 
 
-    <details style="position:relative;">
+    <details class="color-color1-hover" style="position: relative;  padding: 4px">
       <summary style="cursor:pointer; list-style:none; text-decoration: underline;">Search Patient</summary>
       <div class="color-color1" style="position:absolute; z-index: 1; border:8px solid; padding: 4px;">
 
@@ -63,9 +62,9 @@ def base_nav(content: str):
 
       </div>
     </details>
-                <a href="/registerPatient">Register Patient</a>
-                <a href="/calendar">Calendar</a>
-                <a href="/settings">Settings</a>
+                <a class="color-color1-hover" style="padding: 4px" href="/registerPatient">Register Patient</a>
+                <a class="color-color1-hover" style="padding: 4px" href="/calendar">Calendar</a>
+                <a class="color-color1-hover" style="padding: 4px" href="/settings">Settings</a>
             </nav>
             <div id="main-content" class="color-color3" style="flex: 1; overflow: auto;">
                 {content}
@@ -74,10 +73,9 @@ def base_nav(content: str):
     </html>
     """
 
-
 from app import app
 from pages.settings import client
-from test.resources import Patient
+from resources import Patient
 from fastapi import Form
 
 @app.post("/searchPatient", name="searchPatient")

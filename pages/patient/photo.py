@@ -1,7 +1,7 @@
 from app import app
 from pages.settings import client
 from pages.patient._base_patient import base_patient_nav, get_all_resources, page_name_photo
-from test.resources import Patient, Attachment
+from resources import Patient, Attachment
 from fhirpy.base.exceptions import OperationOutcome
 import html
 import json

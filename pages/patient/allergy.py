@@ -3,7 +3,7 @@ from pages.settings import client
 from pages.patient._base_patient import base_patient_nav, get_all_resources, page_name_allergy
 from typing import List
 from fastapi import Request
-from test.resources import AllergyIntolerance
+from resources import AllergyIntolerance
 
 vs_allergyIntolerance_code: list[dict[str, str]] = [
         { "system": "http://snomed.info/sct", "code": "91930004", "display": "Allergy to eggs" },
@@ -143,8 +143,9 @@ def allergy_page(patient_id: str, allergies: List[AllergyIntolerance], form_cont
                 <button hx-target="body"
                         hx-swap="outerHTML"
                         hx-get="/patient/{patient_id}/allergy/form/new"
-                        hx-push-url="false"
-                        hx>Add New Allergy</button>
+                        hx-push-url="false">
+                            Add New Allergy
+                        </button>
             </div>
             <table>
                 <thead>

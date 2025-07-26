@@ -3,7 +3,7 @@ from typing import List
 from pydantic import BaseModel
 from pages.settings import client
 import base64
-from test.resources import (
+from resources import (
     AllergyIntolerance, Attachment, Condition, Immunization, Patient, MedicationRequest)
 from pages._base_nav import base_nav
 
@@ -80,7 +80,7 @@ def base_patient_nav(all_resources: AllResources, content: str, activeTab: str) 
     def tab_link(tab_name, label):
         """if this tab name is active tab, make same color as patient page"""
         if tab_name == activeTab:
-            style = 'class="color-color3" style="margin-top: 2px; margin-bottom: -2px; border-radius: 12px 12px 0 0; border: 2px solid; border-bottom: 0px; padding: 2px 4px 4px 4px;"'
+            style = 'class="color-color3" style="margin-top: 2px; margin-bottom: -2px; border-radius: 12px 12px 0 0; border: 2px solid; border-bottom: 0px; padding: 2px;"'
         else:
             style = 'class="color-color2-hover" style="padding: 4px; padding-top: 6px;"'
         return f'<a {style} href="{app.url_path_for(tab_name, patient_id=patient.id)}">{label}</a>'
@@ -165,7 +165,7 @@ def base_patient_nav(all_resources: AllResources, content: str, activeTab: str) 
                     {tab_link(page_name_overview, "Overview")}
                     {tab_link(page_name_demographics, "Demographics")}
                     {tab_link(page_name_allergy, "Allergies")}
-                    {tab_link(page_name_allergy, "Medication")}
+                    {tab_link(page_name_allergy, "Medications")}
                     {tab_link(page_name_immunizations, "Immunization History")}
                 </nav>
                 <div style="padding: 8px; flex: 1; min-height: 0;">

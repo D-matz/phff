@@ -1,7 +1,7 @@
 from app import app
 from pages.settings import client
 from pages.patient._base_patient import base_patient_nav, get_all_resources, page_name_demographics
-from test.resources import Patient, Coding
+from resources import Patient, Coding
 import json
 import html
 
