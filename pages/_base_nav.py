@@ -1,4 +1,9 @@
-def base_nav(content: str):
+from fastapi import Request
+from app import app, getClient
+from resources import Patient
+from fastapi import Form
+
+def base_nav(request: Request, content: str):
     """every page shows this nav bar on top
     it links to some pages and implements searchPatient"""
     return f"""
@@ -10,7 +15,7 @@ def base_nav(content: str):
             <meta name="htmx-config" content='{{"includeIndicatorStyles": false}}'>
             <title>PotatoEMR</title>
             <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='1em' font-size='80'&gt;🥔&lt;/text&gt;&lt;/svg&gt;">
-            <link rel="stylesheet" href="/static/colors.css">
+            <link rel="stylesheet" href="/static/colors/{request.cookies.get("css_colors_filename", "default")}.css">
             <link rel="stylesheet" href="/static/style.css">
             <script src="/static/htmx.js"></script>
             <script src="/static/form-json.js"></script>
@@ -64,6 +69,7 @@ def base_nav(content: str):
     </details>
                 <a class="color-color1-hover" style="padding: 4px" href="/registerPatient">Register Patient</a>
                 <a class="color-color1-hover" style="padding: 4px" href="/calendar">Calendar</a>
+                <a class="color-color1-hover" style="padding: 4px" href="/lists">Patient Lists</a>
                 <a class="color-color1-hover" style="padding: 4px" href="/settings">Settings</a>
             </nav>
             <div id="main-content" class="color-color3" style="flex: 1; overflow: auto;">
@@ -73,13 +79,8 @@ def base_nav(content: str):
     </html>
     """
 
-from app import app
-from pages.settings import client
-from resources import Patient
-from fastapi import Form
-
 @app.post("/searchPatient", name="searchPatient")
-async def searchPatient(
+async def searchPatient(request: Request,
     search_name: str = Form(''),
     search_id: str = Form(''),
     search_birthdate: str = Form(''),
@@ -101,7 +102,7 @@ async def searchPatient(
         search_params['phone'] = search_phone
 
     print(search_params)
-    resources = client.resources('Patient')  # Return lazy search set
+    resources = getClient(request).resources('Patient')  # Return lazy search set
     resources = resources.search(**search_params).limit(10)
 
     # Fetch resources asynchronously without blocking the event loop

@@ -1,5 +1,5 @@
-from app import app
-from pages.settings import client
+from app import app, getClient
+from fastapi import Request
 from pages.patient._base_patient import base_patient_nav, get_all_resources, page_name_demographics
 from resources import Patient, Coding
 import json
@@ -86,27 +86,27 @@ vs_patient_extension_ethnicity: list[dict[str, str]] = [
 
 
 @app.get("/patient/{patient_id}/demographics", name=page_name_demographics)
-async def patient_demographics_get(patient_id: str):
-    all_resources = await get_all_resources(patient_id)
+async def patient_demographics_get(request: Request, patient_id: str):
+    all_resources = await get_all_resources(request, patient_id)
     patient = all_resources.patient
-    return base_patient_nav(all_resources, demographics_form(patient, render_inputs_as_p=True), page_name_demographics)
+    return base_patient_nav(request, all_resources, demographics_form(patient, render_inputs_as_p=True), page_name_demographics)
 
 @app.get("/patient/{patient_id}/demographics/form", name="patient_demographics_form_get")
-async def patient_demographics_form_get(patient_id: str):
-    all_resources = await get_all_resources(patient_id)
+async def patient_demographics_form_get(request: Request, patient_id: str):
+    all_resources = await get_all_resources(request, patient_id)
     patient = all_resources.patient
-    return base_patient_nav(all_resources, demographics_form(patient, render_inputs_as_p=False), page_name_demographics)
+    return base_patient_nav(request, all_resources, demographics_form(patient, render_inputs_as_p=False), page_name_demographics)
 
 @app.post("/patient/{patient_id}/demographics/form", name="patient_demographics_form_post")
-async def patient_demographics_form_post(patient_id: str, patient: Patient):
+async def patient_demographics_form_post(request: Request, patient_id: str, patient: Patient):
     print("POST has data", patient.model_dump(mode='json'))
-    fhirpy_patient = client.resource('Patient', **patient.model_dump(mode='json'))
+    fhirpy_patient = getClient(request).resource('Patient', **patient.model_dump(mode='json'))
     print("fhirpy_patient", fhirpy_patient.serialize())
     ret = await fhirpy_patient.update()
     print("ret is", ret.serialize())
-    all_resources = await get_all_resources(patient_id)
+    all_resources = await get_all_resources(request, patient_id)
     patient = all_resources.patient
-    return base_patient_nav(all_resources, demographics_form(patient, render_inputs_as_p=True), page_name_demographics)
+    return base_patient_nav(request, all_resources, demographics_form(patient, render_inputs_as_p=True), page_name_demographics)
 
 def demographics_form(patient: Patient, render_inputs_as_p: bool) -> str:
     phone = None

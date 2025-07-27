@@ -1,7 +1,7 @@
-from app import app
+from app import app, getClient
 from typing import List
 from pydantic import BaseModel
-from pages.settings import client
+from fastapi import Request
 import base64
 from resources import (
     AllergyIntolerance, Attachment, Condition, Immunization, Patient, MedicationRequest)
@@ -25,11 +25,11 @@ class AllResources(BaseModel):
     medications: List[MedicationRequest]
     immunizations: List[Immunization]
 
-async def get_all_resources(patient_id) -> AllResources:
+async def get_all_resources(request: Request, patient_id: str) -> AllResources:
     """Fetches a Patient resource and their related resources (AllergyIntolerance, etc).
     Useful because every patient page will need various resources for the sidebar,
     and this way we only make one request to FHIR server, which may be rate limited."""
-    resources = await client.resources('Patient') \
+    resources = await getClient(request).resources('Patient') \
     .search(_id=patient_id) \
     .revinclude('AllergyIntolerance', 'patient') \
     .revinclude('Condition', 'patient') \
@@ -67,7 +67,7 @@ async def get_all_resources(patient_id) -> AllResources:
     return ret
 
 
-def base_patient_nav(all_resources: AllResources, content: str, activeTab: str) -> str:
+def base_patient_nav(request: Request, all_resources: AllResources, content: str, activeTab: str) -> str:
     """every page for a specific patient shows sidebar on left and links on top
     patient page content goes in under them in patient-content
     both navs have hx-boost for links and loading indicator on patient-content
@@ -85,7 +85,7 @@ def base_patient_nav(all_resources: AllResources, content: str, activeTab: str) 
             style = 'class="color-color2-hover" style="padding: 4px; padding-top: 6px;"'
         return f'<a {style} href="{app.url_path_for(tab_name, patient_id=patient.id)}">{label}</a>'
     
-    return(base_nav(
+    return(base_nav(request,
         f"""
         <div style="height: 100%; display: flex;">
             <nav hx-boost="true" hx-indicator="#patient-content" 

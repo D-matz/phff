@@ -1,68 +1,79 @@
-from app import app
-from pages.settings import client
+from app import app, getClient
+from fastapi import Request
 from pages.patient._base_patient import base_patient_nav, get_all_resources, page_name_immunizations
 from typing import List
-from fastapi import Request
-from resources import Immunization
+from resources import Immunization, ImmunizationRecommendation
 from datetime import datetime
 from typing import List, Dict, Tuple
-from utils import cc_str
+from utils import cc_str, dt_str, hn_str
+from pydantic import BaseModel
+
+class ImmunizationAndRec(BaseModel):
+    #combined class because rec needed to include 'next due' in form
+    imm: Immunization
+    rec: ImmunizationRecommendation
 
 @app.get("/patient/{patient_id}/immunization", name=page_name_immunizations)
-async def patient_immunization(patient_id: str):
-    all_resources = await get_all_resources(patient_id)
+async def patient_immunization(request: Request, patient_id: str):
+    all_resources = await get_all_resources(request, patient_id)
     immunization_list = all_resources.immunizations
     form = ""
     ret = immunization_page(patient_id, immunization_list, form)
-    return base_patient_nav(all_resources, ret, page_name_immunizations)
+    return base_patient_nav(request, all_resources, ret, page_name_immunizations)
 
 @app.get("/patient/{patient_id}/immunization/form/new", name="patient_immunization_form_new_get")
 async def patient_immunization_form_new_get(request: Request, patient_id: str):
-    all_resources = await get_all_resources(patient_id)
+    all_resources = await get_all_resources(request, patient_id)
     immunization_list = all_resources.immunizations
-    form = immunization_form(Immunization.model_construct(), patient_id)
+    form = immunization_form(ImmunizationAndRec(
+        imm = Immunization.model_construct(),
+        rec = ImmunizationRecommendation.model_construct()
+        ), patient_id)
     ret = immunization_page(patient_id, immunization_list, form)
-    return base_patient_nav(all_resources, ret, page_name_immunizations)
+    return base_patient_nav(request, all_resources, ret, page_name_immunizations)
 
 @app.post("/patient/{patient_id}/immunization/form/new", name="patient_immunization_form_new_post")
-async def patient_immunization_form_new_post(request: Request, patient_id: str, immunization: Immunization):
-    fhirpy_immunization = client.resource('Immunization', **immunization.model_dump())
+async def patient_immunization_form_new_post(request: Request, patient_id: str, immAndRec: ImmunizationAndRec):
+    fhirpy_immunization = getClient(request).resource('Immunization', **immAndRec.imm.model_dump())
     await fhirpy_immunization.create()
-    all_resources = await get_all_resources(patient_id)
+    all_resources = await get_all_resources(request, patient_id)
     immunization_list = all_resources.immunizations
     form = ""
     ret = immunization_page(patient_id, immunization_list, form)
-    return base_patient_nav(all_resources, ret, page_name_immunizations)
+    return base_patient_nav(request, all_resources, ret, page_name_immunizations)
 
 @app.get("/patient/{patient_id}/immunization/form/existing/{immunization_id}", name="patient_immunization_form_existing_get")
 async def patient_immunization_form_existing_get(patient_id: str, immunization_id: str, request: Request):
-    fhirpy_immunization = await client.reference('Immunization', immunization_id).to_resource()
+    fhirpy_immunization = await getClient(request).reference('Immunization', immunization_id).to_resource()
     immunization: Immunization = Immunization.model_validate(fhirpy_immunization)
-    all_resources = await get_all_resources(patient_id)
+    all_resources = await get_all_resources(request, patient_id)
     immunization_list = all_resources.immunizations
-    form = immunization_form(immunization, patient_id)
+    form = immunization_form(ImmunizationAndRec(
+        imm = immunization,
+        rec = ImmunizationRecommendation.model_construct()
+        ), patient_id)
     ret = immunization_page(patient_id, immunization_list, form)
-    return base_patient_nav(all_resources, ret, page_name_immunizations)
+    return base_patient_nav(request, all_resources, ret, page_name_immunizations)
 
 @app.post("/patient/{patient_id}/immunization/form/existing/{immunization_id}", name="patient_immunization_form_existing_post")
-async def patient_immunization_form_existing_post(request: Request, patient_id: str, immunization_id: str, immunization: Immunization):
-    fhirpy_immunization = client.resource('Immunization', **immunization.model_dump())
+async def patient_immunization_form_existing_post(request: Request, patient_id: str, immunization_id: str, immAndRec: ImmunizationAndRec):
+    fhirpy_immunization = getClient(request).resource('Immunization', **immAndRec.imm.model_dump())
     await fhirpy_immunization.update()
-    all_resources = await get_all_resources(patient_id)
+    all_resources = await get_all_resources(request, patient_id)
     immunization_list = all_resources.immunizations
     form = ""
     ret = immunization_page(patient_id, immunization_list, form)
-    return base_patient_nav(all_resources, ret, page_name_immunizations)
+    return base_patient_nav(request, all_resources, ret, page_name_immunizations)
 
 @app.post("/patient/{patient_id}/immunization/{immunization_id}/delete", name="patient_immunization_delete")
-async def patient_immunization_delete(patient_id: str, immunization_id: str):
-    fhirpy_immunization = await client.reference('Immunization', immunization_id).to_resource()
+async def patient_immunization_delete(request: Request, patient_id: str, immunization_id: str):
+    fhirpy_immunization = await getClient(request).reference('Immunization', immunization_id).to_resource()
     await fhirpy_immunization.delete()
-    all_resources = await get_all_resources(patient_id)
+    all_resources = await get_all_resources(request, patient_id)
     immunization_list = all_resources.immunizations
     form = ""
     ret = immunization_page(patient_id, immunization_list, form)
-    return base_patient_nav(all_resources, ret, page_name_immunizations)
+    return base_patient_nav(request, all_resources, ret, page_name_immunizations)
 
 def immunization_page(patient_id: str, immunization_list: List[Immunization], form_content: str):
     immunizations_byVaccine: Dict[Tuple[str, str], List[Immunization]] = {} 
@@ -159,23 +170,84 @@ def immunization_page(patient_id: str, immunization_list: List[Immunization], fo
     return(''.join(lines))
 
 
-def immunization_form(imm: Immunization, patient_id: str):
+def immunization_form(immAndRec: ImmunizationAndRec, patient_id: str):
+    imm = immAndRec.imm
+    print("from existing date is", imm.occurrenceDateTime)
+    rec = immAndRec.rec
     return f"""
        <form id="immunization-form" 
           hx-ext="form-json" 
           hx-post="{app.url_path_for("patient_immunization_form_existing_post", patient_id=patient_id, immunization_id=imm.id)}" 
           hx-target="body" 
           hx-swap="outerHTML"
-          class="color-color3"
-          style="padding: 4px; border: 2px solid; border-radius: 8px; position: absolute; top: 107px; right: 118px; cursor: move; min-width: 600px; z-index: 1; box-shadow: var(--color3-border) 5px 5px;">
+          class="color-color3 shadow"
+          style="position: absolute; top: 20vh; right: 20vw; width: 70vw; cursor: move; padding: 4px; border: 2px solid; border-radius: 8px; z-index: 1;">
         <script>
             dragElt(document.getElementById('immunization-form'))
         </script>
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1em;">
-                <b>{1}</b>
+                <b>{cc_str(imm.vaccineCode)}</b>
                 <button type="button" onclick="document.getElementById('immunization-form')?.remove();">
                     X
                 </button>
+            </div>
+            <style>
+                .vaccine-form label,
+                .vaccine-form input {{
+                    display: block;
+                    width: 300px;
+                }}
+            </style>
+            <div class="vaccine-form" style="display: flex; flex-wrap: wrap; gap: 1em;">
+                <div>
+                    <label for="vaccineCode">Name:</label>
+                    <input id="vaccineCode" name= value="">
+                </div>
+                <div>
+                    <label for="occurrenceDateTime">Date:</label>
+                    <input type="datetime-local" id="occurrenceDateTime" name="occurrenceDateTime" value="{dt_str(imm.occurrenceDateTime)}">
+                </div>
+                <div>
+                    <label for="???">Next Due:</label>
+                    <input type="datetime-local" id="???" name="???" value="{''}">
+                </div>
+                <div>
+                    <label for="">Given By:</label>
+                    <input name="" value="{imm.performer[0].actor if imm.performer and len(imm.performer) else ''}">
+                </div>
+                <div>
+                    <label for="lotNumber">Lot #:</label>
+                    <input id="lotNumber" name="lotNumber" value="{imm.lotNumber}">
+                </div>
+                <div>
+                    <label for="x">Dose:</label>
+                    <input id="doseQuantity" name="doseQuantity.value" value="{imm.doseQuantity.value if imm.doseQuantity else ''}">
+                </div>
+                <div>
+                    <label for="site">Site:</label>
+                    <input id="site" name="site" value="{cc_str(imm.site)}">
+                </div>
+                <div>
+                    <label for="route">Route:</label>
+                    <input id="route" name="route" value="{cc_str(imm.route)}">
+                </div>
+                <div>
+                    <label for="manufacturer">Manufacturer:</label>
+                    <input id="manufacturer" name="manufacturer" value="{imm.manufacturer}">
+                </div>
+                <div>
+                    <label for="x">Location:</label>
+                    <input value="{imm.location}">
+                </div>
+                <div>
+                    <label for="x">Expires:</label>
+                    <input value="{imm.expirationDate}">
+                </div>
+                <div>
+                    <label for="x">Comment:</label>
+                    <input value="{imm.note[0].text if imm.note and len(imm.note) else ''}"
+                      style="width: 100%">
+                </div>
             </div>
         </form>
     """

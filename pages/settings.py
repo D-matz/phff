@@ -1,48 +1,71 @@
-from fhirpy import AsyncFHIRClient
-from enum import Enum
-from app import app
+from app import app, FHIRServers
 from pages._base_nav import base_nav
 from pydantic import BaseModel, Field
-
-class FHIRServers(Enum):
-    HAPI = "https://hapi.fhir.org/baseR4/"
-    SMART_HEALTH_IT = "https://r4.smarthealthit.org/"
-    FIRELY = "https://server.fire.ly"
-
-client = AsyncFHIRClient(
-    FHIRServers.SMART_HEALTH_IT.value,
-    authorization='Bearer TOKEN',
-)
-
-class SettingsModel(BaseModel):
-    fhir_server: str = Field(..., description="FHIR server URL")
+from os import listdir
+from pathlib import Path
+from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi import Request, Form
+from starlette.responses import RedirectResponse
 
 @app.get("/settings", name="settings")
-async def settings_get():
-    return settings_page()
-
-@app.post("/settings", name="settings")
-async def settings_post(settings: SettingsModel):
-    client.url = settings.fhir_server
-    print(f"FHIR server changed to: {client.url}")
-    return settings_page()
-
-def settings_page():
-    return base_nav(f"""
+async def settings_get(request: Request):
+    return base_nav(request, f"""
     <div style="margin: 16px">
         <h1>Settings</h1>
         <form style="padding: 16px;"
-            hx-ext="form-json"
-            hx-trigger="change"
-            hx-post="/settings"
-            hx-target="body"
-            hx-swap="innerHTML">
-            <label for="fhir_server">FHIR Server:</label>
-            <select id="fhir_server" name="fhir_server">
-                {''.join(f'<option value="{server.value}"{" selected" if server.value == client.url else ""}>{server.value}</option>'
-                for server in FHIRServers)}
-            </select>
+            method="post"
+            action="/settings"
+            onchange="this.submit()">
+            {''.join(f"""
+            <div>
+                <label for="{cookieName}">{cookie_list[cookieName]['label']}</label>
+                <select id="{cookieName}" name="{cookieName}">
+                    {''.join(f'<option value="{cookie_opt}"{" selected" if cookie_opt == request.cookies[cookieName] else ""}>{cookie_opt}</option>'
+                    for cookie_opt in cookie_list[cookieName]['opts'])}
+                </select>
+            </div>
+            """ 
+            for cookieName in cookie_list.keys())}
         </form>
     </div>""")
 
+@app.post("/settings", name="settings_post")
+async def settings_post(
+    request: Request,
+    fhir_server_url: str = Form(None),
+    css_colors_filename: str = Form(None)):
+    
+    response = RedirectResponse(url="/settings", status_code=303)
+    
+    if fhir_server_url:
+        response.set_cookie(
+            key="fhir_server_url", 
+            value=fhir_server_url,
+            max_age=60*60*24*360,
+            httponly=True,
+        )
+    
+    if css_colors_filename:
+        response.set_cookie(
+            key="css_colors_filename", 
+            value=css_colors_filename,
+            max_age=60*60*24*360,
+            httponly=True,
+        )
+    
+    return response
 
+app_dir = Path(__file__).parent.parent
+colors_dir = app_dir / "static" / "colors"
+css_colors_filename_list = [f.removesuffix('.css') for f in listdir(colors_dir)]
+
+cookie_list = {
+    "fhir_server_url": {
+        'opts': [s.value for s in list(FHIRServers)],
+        'label': "FHIR Server",
+    },
+    "css_colors_filename": {
+        'opts': [f.removesuffix('.css') for f in listdir(colors_dir)],
+        'label': 'Theme',
+    },
+}

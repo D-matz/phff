@@ -1,5 +1,5 @@
-from app import app
-from pages.settings import client
+from app import app, getClient
+from fastapi import Request
 from pages.patient._base_patient import base_patient_nav, get_all_resources, page_name_photo
 from resources import Patient, Attachment
 from fhirpy.base.exceptions import OperationOutcome
@@ -7,21 +7,21 @@ import html
 import json
 
 @app.get("/patient/{patient_id}/photo", name=page_name_photo)
-async def patient_photo_get(patient_id: str):
-    all_resources = await get_all_resources(patient_id)
+async def patient_photo_get(request: Request, patient_id: str):
+    all_resources = await get_all_resources(request, patient_id)
     patient: Patient = all_resources.patient
-    return base_patient_nav(all_resources, photo_form(patient), page_name_photo)
+    return base_patient_nav(request, all_resources, photo_form(patient), page_name_photo)
 
 
 @app.post("/patient/{patient_id}/photo", name="patient_photo_post")
-async def patient_photo_post(patient_id: str, patient: Patient):
+async def patient_photo_post(request: Request, patient_id: str, patient: Patient):
     if not patient.photo: return "weird patient/patient_id/photo should always post a photo"
     new_photo = patient.photo.pop()
     patient.photo.insert(0, new_photo)
     #move new photo to beginning of list
     #just because our convention is to use photo[0] for profile
     #so the photo user just submitted will show up as profile pic
-    fhirpy_patient = client.resource('Patient', **patient.model_dump(mode='json'))
+    fhirpy_patient = getClient(request).resource('Patient', **patient.model_dump(mode='json'))
     errors = None
     try:
         await fhirpy_patient.update()
@@ -29,28 +29,28 @@ async def patient_photo_post(patient_id: str, patient: Patient):
         errors = get_html_response_simple(e)
     #we might get a 413 file too large error on user's image
     #in that case for error message, pass on fhir server's html response in an iframe
-    all_resources = await get_all_resources(patient_id)
+    all_resources = await get_all_resources(request, patient_id)
     ret_patient: Patient = all_resources.patient
-    return base_patient_nav(all_resources, photo_form(ret_patient, errors=errors), page_name_photo)
+    return base_patient_nav(request, all_resources, photo_form(ret_patient, errors=errors), page_name_photo)
 
 @app.post("/patient/{patient_id}/photo/choose/{photo_index}", name="patient_photo_choose")
-async def patient_photo_choose(patient_id: str, photo_index: int):
+async def patient_photo_choose(request: Request, patient_id: str, photo_index: int):
     """
     sets photo at chosen index to go to index 0
     which for _base_patient purposes makes it profile pic
     """
-    all_resources = await get_all_resources(patient_id)
+    all_resources = await get_all_resources(request, patient_id)
     patient: Patient = all_resources.patient
     if not patient.photo: return "weird you should not be able to post to patient photo choose if the patient has zero photos"
     #might be more clever to add patient resource to posted form
     #to save this await fhir server request to get patient
     chosen_photo = patient.photo.pop(photo_index)  # Remove and get item at index 3
     patient.photo.insert(0, chosen_photo) 
-    fhirpy_patient = client.resource('Patient', **patient.model_dump(mode='json'))
+    fhirpy_patient = getClient(request).resource('Patient', **patient.model_dump(mode='json'))
     await fhirpy_patient.update()
-    all_resources = await get_all_resources(patient_id)
+    all_resources = await get_all_resources(request, patient_id)
     patient: Patient = all_resources.patient
-    return base_patient_nav(all_resources, photo_form(patient), page_name_photo)
+    return base_patient_nav(request, all_resources, photo_form(patient), page_name_photo)
 
 def photo_form(patient: Patient, errors: str | None = None) -> str:
     photo = None

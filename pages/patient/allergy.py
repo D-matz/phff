@@ -1,5 +1,4 @@
-from app import app
-from pages.settings import client
+from app import app, getClient
 from pages.patient._base_patient import base_patient_nav, get_all_resources, page_name_allergy
 from typing import List
 from fastapi import Request
@@ -79,60 +78,60 @@ vs_category: list[dict[str, str]] = [
 ]
 
 @app.get("/patient/{patient_id}/allergy", name=page_name_allergy)
-async def patient_allergy(patient_id: str):
-    all_resources = await get_all_resources(patient_id)
+async def patient_allergy(request: Request, patient_id: str):
+    all_resources = await get_all_resources(request, patient_id)
     allergies = all_resources.allergies
     form = ""
     ret = allergy_page(patient_id, allergies, form)
-    return base_patient_nav(all_resources, ret, page_name_allergy)
+    return base_patient_nav(request, all_resources, ret, page_name_allergy)
 
 @app.get("/patient/{patient_id}/allergy/form/new", name="patient_allergy_form_new_get")
 async def patient_allergy_form_new_get(request: Request, patient_id: str):
-    all_resources = await get_all_resources(patient_id)
+    all_resources = await get_all_resources(request, patient_id)
     allergies = all_resources.allergies
     form = allergy_form(AllergyIntolerance.model_construct(), request, patient_id)
     ret = allergy_page(patient_id, allergies, form)
-    return base_patient_nav(all_resources, ret, page_name_allergy)
+    return base_patient_nav(request, all_resources, ret, page_name_allergy)
 
 @app.post("/patient/{patient_id}/allergy/form/new", name="patient_allergy_form_new_post")
 async def patient_allergy_form_new_post(request: Request, patient_id: str, allergy: AllergyIntolerance):
-    fhirpy_allergy = client.resource('AllergyIntolerance', **allergy.model_dump())
+    fhirpy_allergy = getClient(request).resource('AllergyIntolerance', **allergy.model_dump())
     await fhirpy_allergy.create()
-    all_resources = await get_all_resources(patient_id)
+    all_resources = await get_all_resources(request, patient_id)
     allergies = all_resources.allergies
     form = ""
     ret = allergy_page(patient_id, allergies, form)
-    return base_patient_nav(all_resources, ret, page_name_allergy)
+    return base_patient_nav(request, all_resources, ret, page_name_allergy)
 
 @app.get("/patient/{patient_id}/allergy/form/existing/{allergy_id}", name="patient_allergy_form_existing_get")
 async def patient_allergy_form_existing_get(patient_id: str, allergy_id: str, request: Request):
-    fhirpy_allergy = await client.reference('AllergyIntolerance', allergy_id).to_resource()
+    fhirpy_allergy = await getClient(request).reference('AllergyIntolerance', allergy_id).to_resource()
     allergy: AllergyIntolerance = AllergyIntolerance.model_validate(fhirpy_allergy)
-    all_resources = await get_all_resources(patient_id)
+    all_resources = await get_all_resources(request, patient_id)
     allergies = all_resources.allergies
     form = allergy_form(allergy, request, patient_id)
     ret = allergy_page(patient_id, allergies, form)
-    return base_patient_nav(all_resources, ret, page_name_allergy)
+    return base_patient_nav(request, all_resources, ret, page_name_allergy)
 
 @app.post("/patient/{patient_id}/allergy/form/existing/{allergy_id}", name="patient_allergy_form_existing_post")
 async def patient_allergy_form_existing_post(request: Request, patient_id: str, allergy_id: str, allergy: AllergyIntolerance):
-    fhirpy_allergy = client.resource('AllergyIntolerance', **allergy.model_dump())
+    fhirpy_allergy = getClient(request).resource('AllergyIntolerance', **allergy.model_dump())
     await fhirpy_allergy.update()
-    all_resources = await get_all_resources(patient_id)
+    all_resources = await get_all_resources(request, patient_id)
     allergies = all_resources.allergies
     form = ""
     ret = allergy_page(patient_id, allergies, form)
-    return base_patient_nav(all_resources, ret, page_name_allergy)
+    return base_patient_nav(request, all_resources, ret, page_name_allergy)
 
 @app.post("/patient/{patient_id}/allergy/{allergy_id}/delete", name="patient_allergy_delete")
-async def patient_allergy_delete(patient_id: str, allergy_id: str):
-    fhirpy_allergy = await client.reference('AllergyIntolerance', allergy_id).to_resource()
+async def patient_allergy_delete(request: Request, patient_id: str, allergy_id: str):
+    fhirpy_allergy = await getClient(request).reference('AllergyIntolerance', allergy_id).to_resource()
     await fhirpy_allergy.delete()
-    all_resources = await get_all_resources(patient_id)
+    all_resources = await get_all_resources(request, patient_id)
     allergies = all_resources.allergies
     form = ""
     ret = allergy_page(patient_id, allergies, form)
-    return base_patient_nav(all_resources, ret, page_name_allergy)
+    return base_patient_nav(request, all_resources, ret, page_name_allergy)
 
 def allergy_page(patient_id: str, allergies: List[AllergyIntolerance], form_content: str):
     return f"""
