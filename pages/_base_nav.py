@@ -24,13 +24,13 @@ def base_nav(request: Request, content: str):
         </head>
         <body style="height: 100%; margin: 0; padding: 0;display: flex; flex-direction: column;">
             <nav hx-boost="true" id="main-nav" class="color-color1"
-            style="display: flex; padding-left: 2px; position: relative; border-bottom: 2px solid; line-height: 1.2em;">
+            style="display: flex; padding-left: 2px; position: relative; border-bottom-width: 2px; border-bottom-style: solid; line-height: 1.2em;">
                 <a class="color-color1-hover" style="padding: 4px" href="/">PotatoEMR🥔</a>
 
 
     <details class="color-color1-hover" style="position: relative;  padding: 4px">
       <summary style="cursor:pointer; list-style:none; text-decoration: underline;">Search Patient</summary>
-      <div class="color-color1" style="position:absolute; z-index: 1; border:8px solid; padding: 4px;">
+      <div class="color-color1" style="position:absolute; z-index: 1; border-width: 8px; border-style: solid; padding: 4px;">
 
         <form id="search-patient-form"
             hx-post="/searchPatient"
@@ -101,7 +101,7 @@ async def searchPatient(request: Request,
     if search_phone:
         search_params['phone'] = search_phone
 
-    print(search_params)
+    print("_base_nav search", search_params)
     resources = getClient(request).resources('Patient')  # Return lazy search set
     resources = resources.search(**search_params).limit(10)
 

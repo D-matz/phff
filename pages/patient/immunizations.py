@@ -103,10 +103,12 @@ def immunization_page(patient_id: str, immunization_list: List[Immunization], fo
              
         .vaccine-group td{{
             padding: 4px;
-            border-bottom: 1px solid;
+            border-bottom-width: 1px;
+            border-bottom-style: solid;
         }}
             .vaccine-group td:first-child {{
-            border-left: 3px solid;
+            border-left-width: 3px;
+            border-left-style: solid;
         }}
                 
         .spacer + .vaccine-group td:first-child,
@@ -121,11 +123,15 @@ def immunization_page(patient_id: str, immunization_list: List[Immunization], fo
             
         .vaccine-group:first-child td,
         .spacer + .vaccine-group td {{
-            border-top: 1px solid;
+            border-top-width: 1px;
+            border-top-style: solid;
         }}
     </style>
-    <h1>Immunization History</h1>
-    <div id="immunization-page" class="color-color3" style="margin: 4px; padding: 4px; border: 2px solid; width: fit-content;">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
+        <h1>Immunization History</h1>
+        <button class="color-primary-hover" style="padding: 4px; border-width: 1px; font-size: 1.1em;">Add New Immunization</button>
+    </div>
+    <div id="immunization-page" class="color-color3" style="margin: 4px; padding: 4px; border-width: 2px; border-style: solid; width: fit-content;">
     <table style="border-collapse: separate; border-spacing: 0;">
         <thead>
                 <th style="text-align: left; padding-left: 8px;">Immunization</th>
@@ -181,7 +187,7 @@ def immunization_form(immAndRec: ImmunizationAndRec, patient_id: str):
           hx-target="body" 
           hx-swap="outerHTML"
           class="color-color3 shadow"
-          style="position: absolute; top: 20vh; right: 20vw; width: 70vw; cursor: move; padding: 4px; border: 2px solid; border-radius: 8px; z-index: 1;">
+          style="position: absolute; top: 20vh; right: 20vw; width: 70vw; cursor: move; padding: 4px; border-width: 2px; border-style: solid; border-radius: 8px; z-index: 1;">
         <script>
             dragElt(document.getElementById('immunization-form'))
         </script>

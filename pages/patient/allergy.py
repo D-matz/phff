@@ -136,10 +136,11 @@ async def patient_allergy_delete(request: Request, patient_id: str, allergy_id: 
 def allergy_page(patient_id: str, allergies: List[AllergyIntolerance], form_content: str):
     return f"""
         <h1>Allergies</h1>
-        <div id="allergy-page" class="color-color3" style="margin: 4px; padding: 4px; border: 2px solid; width: fit-content;">
+        <div id="allergy-page" class="color-color3" style="margin: 4px; padding: 4px; border-width: 2px; border-style: solid; width: fit-content;">
             <div style="display: flex; align-items: center; gap: 1em;">
                 <h3>Allergies</h3>
-                <button hx-target="body"
+                <button class="color-primary-hover" style="border-width: 1px; border-radius: 4px; padding: 4px;"
+                        hx-target="body"
                         hx-swap="outerHTML"
                         hx-get="/patient/{patient_id}/allergy/form/new"
                         hx-push-url="false">
@@ -184,7 +185,7 @@ def allergy_form(allergy: AllergyIntolerance, request: Request, patient_id: str)
           hx-target="body" 
           hx-swap="outerHTML"
           class="color-color3"
-          style="padding: 4px; border-radius: 8px; border: 8px solid; position: absolute; top: 100px; right: 100px; cursor: move; min-width: 600px; z-index: 1;">
+          style="padding: 4px; border-radius: 8px; border-width: 8px; border-style: solid; position: absolute; top: 100px; right: 100px; cursor: move; min-width: 600px; z-index: 1;">
         <script>
             dragElt(document.getElementById('allergy-form'))
         </script>

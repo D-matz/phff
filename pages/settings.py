@@ -58,14 +58,18 @@ async def settings_post(
 app_dir = Path(__file__).parent.parent
 colors_dir = app_dir / "static" / "colors"
 css_colors_filename_list = [f.removesuffix('.css') for f in listdir(colors_dir)]
+css_colors_filename_list.sort()
+
+server_list = [s.value for s in list(FHIRServers)]
+server_list.sort()
 
 cookie_list = {
     "fhir_server_url": {
-        'opts': [s.value for s in list(FHIRServers)],
+        'opts': server_list,
         'label': "FHIR Server",
     },
     "css_colors_filename": {
-        'opts': [f.removesuffix('.css') for f in listdir(colors_dir)],
-        'label': 'Theme',
+        'opts': css_colors_filename_list,
+        'label': 'Color Theme',
     },
 }

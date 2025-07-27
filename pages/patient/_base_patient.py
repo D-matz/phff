@@ -80,7 +80,7 @@ def base_patient_nav(request: Request, all_resources: AllResources, content: str
     def tab_link(tab_name, label):
         """if this tab name is active tab, make same color as patient page"""
         if tab_name == activeTab:
-            style = 'class="color-color3" style="margin-top: 2px; margin-bottom: -2px; border-radius: 12px 12px 0 0; border: 2px solid; border-bottom: 0px; padding: 2px;"'
+            style = 'class="color-color3" style="margin-top: 2px; margin-bottom: -2px; border-radius: 12px 12px 0 0; border-width: 2px; border-style: solid; border-bottom: 0px; padding: 2px;"'
         else:
             style = 'class="color-color2-hover" style="padding: 4px; padding-top: 6px;"'
         return f'<a {style} href="{app.url_path_for(tab_name, patient_id=patient.id)}">{label}</a>'
@@ -89,7 +89,7 @@ def base_patient_nav(request: Request, all_resources: AllResources, content: str
         f"""
         <div style="height: 100%; display: flex;">
             <nav hx-boost="true" hx-indicator="#patient-content" 
-                id="patient-sidebar" class="color-color2" style="height: 100%; padding: 4px; width: 200px; min-width: 200px; box-sizing: border-box; overflow: auto; border-right: 2px solid;">
+                id="patient-sidebar" class="color-color2" style="height: 100%; padding: 4px; width: 200px; min-width: 200px; box-sizing: border-box; overflow: auto; border-right-width: 2px; border-right-style: solid;">
 
                 <a href="{app.url_path_for(page_name_photo, patient_id=patient.id)}"
                     title="patient photo - click to change">
@@ -161,7 +161,7 @@ def base_patient_nav(request: Request, all_resources: AllResources, content: str
             <div style="flex: 1; display: flex; flex-direction: column; height: 100%;">
                 <nav hx-boost="true" hx-indicator="#patient-content" 
                     id="patient-nav" class="color-color2" 
-                    style="padding-left: 2px; display: flex; position: relative; border-bottom: 2px solid; line-height: 1.2em;">
+                    style="padding-left: 2px; display: flex; position: relative; border-bottom-width: 2px; border-bottom-style: solid; line-height: 1.2em;">
                     {tab_link(page_name_overview, "Overview")}
                     {tab_link(page_name_demographics, "Demographics")}
                     {tab_link(page_name_allergy, "Allergies")}
